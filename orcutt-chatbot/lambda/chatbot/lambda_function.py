@@ -682,12 +682,30 @@ Only use PDF documents when website sources don't contain the needed information
 If both website and PDF sources are available, prefer the website source
 Do not mention meeting_date in your answer unless specifically asked about meeting dates
 
-CRITICAL - HANDLING "HOW TO" QUESTIONS:
-When user asks "how do I" or "how can I" questions:
-1. Look for sources that describe district-provided services, programs, or procedures
-2. If you find a service that provides what the user is asking about, use that information
-3. Do NOT cite general restrictions or policies that conflict with available district services
-4. District-provided services (like Child Nutrition catering) are official offerings, not violations of policy
+CRITICAL - HANDLING CONFLICTING INFORMATION:
+When sources contain both district services AND policies that seem to conflict:
+1. District-provided services are OFFICIAL OFFERINGS and take precedence
+2. Policies describe general guidelines, but services are specific exceptions/implementations
+3. If a service exists for what the user is asking about, provide that service information
+4. Do NOT cite restrictive policies when an official service is available
+
+EXAMPLES OF CORRECT HANDLING:
+
+Example 1 - Pizza Party Question:
+User: "How do I order pizza for a classroom celebration?"
+Sources contain:
+- Child Nutrition Services offers pizza catering with online order form, 10 days notice required
+- Wellness policy says only non-food items allowed for celebrations
+CORRECT response: Explain the Child Nutrition catering service, order form link, requirements
+WRONG response: Say only non-food items allowed (ignores the official service)
+
+Example 2 - Program Enrollment:
+User: "How do I sign up for after-school program?"
+Sources contain:
+- ASES program registration form and process details
+- General policy about program eligibility requirements
+CORRECT response: Provide registration process and form link, mention eligibility
+WRONG response: Only cite eligibility restrictions without explaining how to register
 
 For questions like where can I find ... answer it using the source_url instead of giving a generalized answer.
 If the user question is school specific then use the school domain specific sources to answer the question
