@@ -1,20 +1,29 @@
   # Orcutt Schools Chatbot
 
+**This repository is maintained by Tech Reformers and is a fork of the original work by Cal Poly DxHub.**
+
+Original repository: [https://github.com/cal-poly-dxhub/orcutt-schools-chatbot](https://github.com/cal-poly-dxhub/orcutt-schools-chatbot/tree/main)
+
 ## Table of Contents
 
-- [Collaboration](#collaboration)
+- [About This Fork](#about-this-fork)
 - [Disclaimers](#disclaimers)
 - [Overview](#overview)
 - [Architecture](#architecture)
 - [Support](#support)
 - [Deployment](#initial-setup)
 - [Webscraping](#webscraping)
+- [Troubleshooting](#troubleshooting)
 
-# Collaboration
+# About This Fork
 
-Thanks for your interest in our solution. Having specific examples of replication and usage allows us to continue to grow and scale our work. If you clone or use this repository, kindly shoot us a quick email to let us know you are interested in this work!
+This repository is hosted and maintained by Tech Reformers. We have forked the original Orcutt Schools Chatbot project created by Cal Poly DxHub to continue development and provide enhanced deployment documentation.
 
-<wwps-cic@amazon.com>
+**Original Authors:**
+- Shrey Shah - <sshah84@calpoly.edu>
+
+**Original Collaboration Note:**
+Thanks for your interest in this solution. Having specific examples of replication and usage allows us to continue to grow and scale our work. If you use this repository, please let us know at <info@techreformers.com>
 
 # Disclaimers
 
@@ -40,9 +49,7 @@ Thanks for your interest in our solution. Having specific examples of replicatio
 
 **All work produced is open source. More information can be found in the GitHub repo.**
 
-## Authors
 
-- Shrey Shah - <sshah84@calpoly.edu>
 
 ## Overview
 
@@ -80,11 +87,11 @@ Additionally other AWS services are used for additional functionality
 ## Prerequisites
 
 - AWS CLI configured with appropriate permissions
-- Node.js 18+ (for frontend)
+- Node.js 18+ (for frontend) - Note: Node 23 is end-of-life; versions 20, 22, or 24 are recommended
 - Python 3.13+ (for CDK and Lambda functions)
 - AWS CDK CLI installed (`npm install -g aws-cdk`)
 - Request model access for the required models through AWS console in Bedrock (Amazon Titan Text V2, Claude Sonnet 3.5 V2 & Amazon Nova Lite)
-- Docker Desktop
+- Docker Desktop (must be running before deployment)
 
 
 ## Initial Setup
@@ -118,23 +125,61 @@ Additionally other AWS services are used for additional functionality
   ```
 
 4. Configure AWS credentials
+
+  **Option A: Using AWS SSO (Recommended for organizations using SSO)**
+  ```bash
+  aws configure sso
+  ```
+  You'll be prompted to enter:
+  - SSO session name (e.g., your-org-name)
+  - SSO start URL (e.g., https://your-org.awsapps.com/start)
+  - SSO region (the region where your SSO is configured, may differ from deployment region)
+  - Account and role selection
+  - Default region for deployment (e.g., us-west-2)
+  - Default output format (json recommended)
+  
+  After configuration, login with:
+  ```bash
+  aws sso login --profile <profile-name>
+  ```
+  
+  **Option B: Using Access Keys**
   ```bash
   aws configure
   ```
   You'll be prompted to enter:
-  
   - AWS Access Key ID
   - AWS Secret Access Key
   - Default region name
   - Default output format
 
 
-5. Deploy the application
+5. Bootstrap CDK (first time only)
+  
+  If this is your first time using CDK in this AWS account/region, bootstrap it:
   ```bash
+  # If using SSO profile
+  cdk bootstrap aws://<ACCOUNT-ID>/<REGION> --profile <profile-name>
+  
+  # If using default credentials
+  cdk bootstrap aws://<ACCOUNT-ID>/<REGION>
+  ```
+  Replace `<ACCOUNT-ID>` with your AWS account ID and `<REGION>` with your deployment region (e.g., us-west-2)
+
+6. Deploy the application
+  ```bash
+  # If using SSO profile, set it as active
+  export AWS_PROFILE=<profile-name>
+  
   ./scripts/deploy.sh
   ```
+  
+  **Note:** The deployment process takes 10-15 minutes, primarily due to OpenSearch domain provisioning.
 
 ## Webscraping
+
+**Important:** After initial deployment, you must run the webscraper to populate the knowledge base with content. Without this step, the chatbot will not have any information to answer questions.
+
 To run the webscraping functionality:
 
   ```bash
@@ -149,12 +194,50 @@ This script executes the webscraping lambda function, which performs the followi
 4. S3 Upload: Uploads the processed content and metadata to the S3 bucket
 5. Knowledge Base Sync: Synchronizes the knowledge base with the newly added content
 
-The entire pipeline runs automatically once the script is executed, ensuring your knowledge base stays up-to-date with the latest web content.
+The entire pipeline runs automatically once the script is executed. The ingestion process typically takes 2-5 minutes to complete after the script finishes.
+
+## Troubleshooting
+
+### Chatbot Returns Network Error
+
+If the chatbot frontend loads but returns a network error when you try to chat, the frontend may have been built with a placeholder API URL. To fix this:
+
+1. Get the real API URL from CloudFormation outputs:
+   - Go to AWS Console > CloudFormation > OrcuttChatbotStack-dev > Outputs
+   - Copy the `ApiUrl` value (e.g., https://xxxxx.execute-api.us-west-2.amazonaws.com/prod/)
+
+2. Rebuild the frontend with the correct API URL:
+   ```bash
+   cd frontend
+   REACT_APP_API_BASE_URL="<your-api-url>" npm run build
+   cd ..
+   ```
+
+3. Redeploy the stack:
+   ```bash
+   cdk deploy --require-approval never
+   ```
+
+### CDK Bootstrap Issues
+
+If you see "No bucket named 'cdk-hnb659fds-assets-...' errors:
+- Delete the existing CDKToolkit stack if it exists but is incomplete
+- Re-run the bootstrap command from step 5 above
+
+### SSO Session Expired
+
+If using SSO and commands fail with authentication errors:
+```bash
+aws sso login --profile <profile-name>
+```
 
 
 ## Support
 
-For any queries or issues, please contact:
+For any queries or issues with this fork, please contact:
 
+**Tech Reformers:** <info@techreformers.com>
+
+For questions about the original project, please refer to the [original repository](https://github.com/cal-poly-dxhub/orcutt-schools-chatbot/tree/main) or contact:
 - Darren Kraker - <dkraker@amazon.com>
-- Shrey Shah, Jr. SDE - <sshah84@calpoly.edu>
+- Shrey Shah - <sshah84@calpoly.edu>
