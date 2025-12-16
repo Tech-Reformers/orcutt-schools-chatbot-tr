@@ -253,6 +253,16 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 
 **Impact:** More comprehensive context for the chatbot to work with, improving answer accuracy.
 
+### 3. Added Prompt Guidance for "How To" Questions (Commit: 4e8cae4)
+**Problem:** When users asked "how to" questions, the chatbot sometimes cited conflicting information.
+
+**Solution:** Added explicit prompt guidance to help the chatbot handle "how to" questions more effectively:
+- Look for sources describing district-provided services, programs, or procedures
+- Prioritize actionable service information over general restrictions
+- Recognize that district-provided services are official offerings
+
+**Impact:** Better handling of procedural questions, though some edge cases remain.
+
 **Note:** Attempted upgrade to Claude Sonnet 4.5 but reverted due to AWS Service Control Policy restrictions (Commits: 3ed78d4, d54bc7b, 83e328b). Currently using Claude 3.5 Sonnet V2.
 
 ## Support
