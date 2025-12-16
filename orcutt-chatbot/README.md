@@ -253,15 +253,15 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 
 **Impact:** More comprehensive context for the chatbot to work with, improving answer accuracy.
 
-### 3. Added Prompt Guidance for "How To" Questions (Commit: 4e8cae4)
-**Problem:** When users asked "how to" questions, the chatbot sometimes cited conflicting information.
+### 3. Few-Shot Examples for Conflicting Information (Commit: 2297f04)
+**Problem:** When sources contained both district services AND restrictive policies, the chatbot would cite the policy instead of the service (e.g., saying "no food allowed" instead of explaining the pizza catering service).
 
-**Solution:** Added explicit prompt guidance to help the chatbot handle "how to" questions more effectively:
-- Look for sources describing district-provided services, programs, or procedures
-- Prioritize actionable service information over general restrictions
-- Recognize that district-provided services are official offerings
+**Solution:** Added few-shot examples directly in the prompt showing Claude how to handle conflicts:
+- Example 1: Pizza party question - use the catering service info, not the wellness policy
+- Example 2: Program enrollment - provide registration process, not just eligibility restrictions
+- Clear principle: District-provided services are official offerings and take precedence over general policies
 
-**Impact:** Better handling of procedural questions, though some edge cases remain.
+**Impact:** Chatbot now correctly identifies and prioritizes district services over restrictive policies. This approach is extensible - new examples can be added as edge cases are discovered.
 
 **Note:** Attempted upgrade to Claude Sonnet 4.5 but reverted due to AWS Service Control Policy restrictions (Commits: 3ed78d4, d54bc7b, 83e328b). Currently using Claude 3.5 Sonnet V2.
 
