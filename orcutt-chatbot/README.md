@@ -263,7 +263,42 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 
 **Impact:** Chatbot now correctly identifies and prioritizes district services over restrictive policies. This approach is extensible - new examples can be added as edge cases are discovered.
 
+### 4. Source Display Improvement (Completed: 2025-12-16)
+**Problem:** Sources showed broken S3 presigned URLs instead of original website URLs, resulting in "Access Denied" errors when users clicked on sources.
+
+**Solution:** 
+- Backend: Removed presigned URL generation, sources now only contain original website URLs
+- Frontend: Changed display to show `🔗 [URL]` format with clickable hyperlinks directly to source websites
+- Simplified source metadata structure
+
+**Impact:** Users can now click on sources and be taken directly to the original website pages. No more broken S3 links.
+
+### 5. Website Content Prioritization (Completed: 2025-12-16)
+**Problem:** Chatbot was retrieving and using outdated information from PDF documents instead of current website content, leading to inaccurate answers.
+
+**Solution:**
+- Added source type detection to identify website vs PDF sources
+- Implemented reranking logic that always places website sources before PDF sources in results
+- Added date extraction and filtering to prioritize sources with future dates for date-related queries
+- Enhanced prompt with date-aware response guidance
+
+**Impact:** Website content now consistently appears before PDFs in search results, ensuring Claude uses current information. Date-related queries focus on upcoming events rather than past dates.
+
 **Note:** Attempted upgrade to Claude Sonnet 4.5 but reverted due to AWS Service Control Policy restrictions (Commits: 3ed78d4, d54bc7b, 83e328b). Currently using Claude 3.5 Sonnet V2.
+
+## Known Limitations
+
+### Webscraper Limitations
+1. **External PDFs Not Captured**: PDFs hosted on external domains (e.g., ParentSquare, SmartSites) are not downloaded, even when linked from the main website. This affects content like bus schedules and forms.
+2. **JavaScript/Dynamic Content**: Pages that load content dynamically via JavaScript (like paginated staff directories) are not fully captured. Only the initial page load is scraped.
+3. **Pagination**: Multi-page content requiring "next" button clicks is not followed.
+
+### Search Quality
+1. **Semantic Search Limitations**: Some queries may not retrieve the most relevant pages due to vector similarity scoring. For example, "Who are the Executive Directors?" may not find the Executive Team page even though it exists.
+
+**Future Work**: Specs have been created to address these limitations:
+- External PDF Scraping & JavaScript Content (`.kiro/specs/external-pdf-scraping/`)
+- These improvements require webscraper enhancements including headless browser support
 
 ## Support
 

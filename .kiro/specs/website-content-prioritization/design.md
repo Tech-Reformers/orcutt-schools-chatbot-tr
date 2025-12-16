@@ -1,0 +1,138 @@
+# Design Document
+
+## Overview
+
+This design improves the chatbot's source prioritization to prefer website content over PDF documents when both are available. The solution involves modifying the knowledge base retrieval process to apply ranking boosts to website sources and implementing date-aware filtering for time-sensitive queries.
+
+## Architecture
+
+The current system retrieves sources using semantic search from AWS Bedrock Knowledge Base, which returns results ranked by vector similarity. We will add a post-retrieval reranking step that applies business logic to boost website sources and filter based on dates.
+
+**Current Flow:**
+1. User query → Semantic search → Ranked results → Claude generates response
+
+**New Flow:**
+1. User query → Semantic search → Ranked results → **Rerank (boost websites, filter dates)** → Claude generates response
+
+## Components and Interfaces
+
+### Backend Changes
+
+**File**: `lambda/chatbot/lambda_function.py`
+
+**New Method**: `rerank_sources_by_type()`
+- Takes retrieval results and query
+- Separates website sources from PDF sources
+- Applies boost factor to website sources
+- Reorders results with websites first
+
+**New Method**: `filter_by_dates()`
+- Extracts dates from source content
+- Compares dates to current date
+- Deprioritizes sources with only past dates for date-related queries
+
+**Modified Method**: `process_knowledge_base_response()`
+- Calls reranking methods before processing sources
+- Maintains existing source metadata structure
+
+### Source Type Detection
+
+Sources will be classified as "website" or "pdf" based on metadata:
+- **Website**: `source_url` ends with `.net` or `.com` (not `.pdf`)
+- **PDF**: `source_url` ends with `.pdf` OR s3Uri contains `.pdf`
+
+### Date Extraction
+
+For date-aware filtering:
+- Extract dates from source content using regex patterns
+- Common formats: MM/DD/YYYY, Month DD, YYYY, etc.
+- Compare extracted dates to `datetime.now()`
+- Flag sources as "has_future_dates", "has_only_past_dates", or "no_dates"
+
+## Data Models
+
+### Source Ranking Metadata
+
+```python
+{
+    "source_type": "website" | "pdf",
+    "has_future_dates": bool,
+    "has_past_dates": bool,
+    "boost_score": float  # Multiplier applied to relevance
+}
+```
+
+### Ranking Logic
+
+**Approach**: Simple separation rather than score-based boosting
+
+```python
+# Separate sources by type
+website_sources = [s for s in sources if is_website(s)]
+pdf_sources = [s for s in sources if is_pdf(s)]
+
+# For date-related queries, further filter by dates
+if is_date_query:
+    website_sources = prioritize_future_dates(website_sources)
+    pdf_sources = prioritize_future_dates(pdf_sources)
+
+# Reorder: websites first, then PDFs
+reranked_sources = website_sources + pdf_sources
+```
+
+This ensures websites always appear before PDFs in the context, regardless of semantic similarity scores. Claude will naturally use the first relevant sources it encounters.
+
+## Correctness Properties
+
+*A property is a characteristic or behavior that should hold true across all valid executions of a system-essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+
+### Property 1: Website Source Prioritization
+*For any* query where both website and PDF sources are retrieved, website sources SHALL appear before PDF sources in the reranked results (assuming similar relevance scores).
+**Validates: Requirements 1.1, 1.2, 1.3**
+
+### Property 2: Date-Aware Ranking
+*For any* date-related query, sources containing future dates SHALL be ranked higher than sources containing only past dates.
+**Validates: Requirements 5.1, 5.3**
+
+### Property 3: Consistent Ranking
+*For any* query asked with different phrasing, the reranking logic SHALL apply the same boost factors and produce consistent source ordering.
+**Validates: Requirements 2.1, 2.3**
+
+### Property 4: Fallback to PDFs
+*For any* query where no website sources are available, PDF sources SHALL be used without penalty.
+**Validates: Requirements 4.2**
+
+## Error Handling
+
+### No Website Sources Available
+- **Scenario**: Query retrieves only PDF sources
+- **Handling**: Use PDF sources normally, no boost applied
+- **User Impact**: User gets answer from PDFs without indication of lower priority
+
+### Date Extraction Fails
+- **Scenario**: Cannot parse dates from source content
+- **Handling**: Treat source as "no_dates", apply no date-based penalty
+- **User Impact**: Source is ranked based on type (website vs PDF) only
+
+### All Sources Have Past Dates
+- **Scenario**: User asks about future event but all sources have past dates
+- **Handling**: Use best available sources, let Claude explain dates are past
+- **User Impact**: User gets informed that information may be outdated
+
+## Testing Strategy
+
+### Unit Tests
+- Test `rerank_sources_by_type()` with mixed website/PDF sources
+- Test `filter_by_dates()` with various date formats
+- Verify boost calculations are correct
+- Test edge cases (no sources, all PDFs, all websites)
+
+### Integration Tests
+- End-to-end test: Ask "Who are the Executive Directors?" → verify website source used
+- Date test: Ask "When are parent-teacher conferences?" → verify future dates prioritized
+- Fallback test: Ask question only in PDFs → verify PDFs used without issue
+
+### Manual Testing
+- Test with known queries that currently fail (Executive Directors, bus schedules)
+- Verify consistency across multiple phrasings
+- Check that PDF sources still work when appropriate

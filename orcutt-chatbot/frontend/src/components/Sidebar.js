@@ -10,18 +10,6 @@ const Sidebar = ({
   onSourceClick 
 }) => {
 
-  const handleFilenameClick = (source) => {
-    if (source.presignedUrl) {
-      window.open(source.presignedUrl, '_blank');
-    }
-  };
-
-  const handleLinkClick = (source) => {
-    if (source.url) {
-      window.open(source.url, '_blank');
-    }
-  };
-
   return (
     <div className="sidebar">
       {/* Session Info */}
@@ -50,24 +38,23 @@ const Sidebar = ({
           <div className="sources-list">
             {sources.map((source, index) => (
               <div key={index} className="source-item">
-                <div className="source-content">
-                  <span 
-                    className="source-filename"
-                    onClick={() => handleFilenameClick(source)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {source.filename}
-                  </span>
-                  {source.url && (
-                    <span 
-                      className="source-link-icon"
-                      onClick={() => handleLinkClick(source)}
-                      style={{ cursor: 'pointer' }}
+                {source.url ? (
+                  <div className="source-content">
+                    <span className="source-link-icon">🔗</span>
+                    <a 
+                      href={source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="source-link"
                     >
-                      🔗
-                    </span>
-                  )}
-                </div>
+                      {source.url}
+                    </a>
+                  </div>
+                ) : (
+                  <div className="source-content">
+                    <span className="source-filename">{source.filename}</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>

@@ -234,6 +234,12 @@ class OrcuttChatbot:
                         kb_response_school_specific = self.query_knowledge_base_semantic(message, knowledge_base_id, school_url_dict[selected_school.strip()], 10)
 
                     kb_response_main_domain = self.query_knowledge_base_semantic(message, knowledge_base_id, "orcuttschools.net", 40)
+                    
+                    # Rerank sources to prioritize website content
+                    kb_response_main_domain = self.rerank_kb_response(kb_response_main_domain, message)
+                    if kb_response_school_specific:
+                        kb_response_school_specific = self.rerank_kb_response(kb_response_school_specific, message)
+                    
                     context, sources = self.process_knowledge_base_response([kb_response_main_domain, kb_response_school_specific])
             
             # Step 5: Generate response with conversation context
@@ -536,6 +542,138 @@ Respond with ONLY the category name (greeting, farewell, knowledge_base, knowled
             logging.error(f"Error querying knowledge base: {str(e)}")
             return {}
     
+    def is_website_source(self, result: Dict) -> bool:
+        """Determine if a source is a website page (not a PDF)"""
+        try:
+            # Check source URL in metadata
+            source_url = result.get('metadata', {}).get('source', '').lower()
+            if source_url.endswith('.pdf'):
+                return False
+            
+            # Check S3 URI
+            s3_uri = result.get('location', {}).get('s3Location', {}).get('uri', '').lower()
+            if '.pdf' in s3_uri:
+                return False
+            
+            # If neither indicates PDF, treat as website
+            return True
+            
+        except Exception as e:
+            logging.error(f"Error detecting source type: {str(e)}")
+            return True  # Default to website if detection fails
+    
+    def extract_dates_from_content(self, content: str) -> List[datetime]:
+        """Extract dates from content text"""
+        dates = []
+        try:
+            # Common date patterns
+            patterns = [
+                r'\b(\d{1,2})/(\d{1,2})/(\d{4})\b',  # MM/DD/YYYY
+                r'\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})\b',  # Month DD, YYYY
+                r'\b(\d{1,2})-(\d{1,2})-(\d{4})\b',  # MM-DD-YYYY
+            ]
+            
+            for pattern in patterns:
+                matches = re.finditer(pattern, content, re.IGNORECASE)
+                for match in matches:
+                    try:
+                        if '/' in match.group(0) or '-' in match.group(0):
+                            # Numeric format
+                            parts = re.split(r'[/-]', match.group(0))
+                            month, day, year = int(parts[0]), int(parts[1]), int(parts[2])
+                        else:
+                            # Month name format
+                            month_name = match.group(1)
+                            day = int(match.group(2))
+                            year = int(match.group(3))
+                            month = datetime.strptime(month_name, '%B').month
+                        
+                        parsed_date = datetime(year, month, day)
+                        dates.append(parsed_date)
+                    except (ValueError, AttributeError):
+                        continue
+            
+        except Exception as e:
+            logging.error(f"Error extracting dates: {str(e)}")
+        
+        return dates
+    
+    def has_future_dates(self, result: Dict) -> bool:
+        """Check if source content contains future dates"""
+        try:
+            content = result.get('content', {}).get('text', '')
+            dates = self.extract_dates_from_content(content)
+            
+            if not dates:
+                return False  # No dates found
+            
+            current_date = datetime.now()
+            return any(d > current_date for d in dates)
+            
+        except Exception as e:
+            logging.error(f"Error checking future dates: {str(e)}")
+            return False
+    
+    def prioritize_future_dates(self, results: List[Dict]) -> List[Dict]:
+        """Reorder results to prioritize those with future dates"""
+        try:
+            with_future = []
+            without_future = []
+            
+            for result in results:
+                if self.has_future_dates(result):
+                    with_future.append(result)
+                else:
+                    without_future.append(result)
+            
+            return with_future + without_future
+            
+        except Exception as e:
+            logging.error(f"Error prioritizing future dates: {str(e)}")
+            return results  # Return original order if error
+    
+    def is_date_query(self, query: str) -> bool:
+        """Detect if query is asking about dates or events"""
+        date_keywords = [
+            'when', 'schedule', 'calendar', 'date', 'conference', 
+            'meeting', 'event', 'upcoming', 'next', 'time'
+        ]
+        query_lower = query.lower()
+        return any(keyword in query_lower for keyword in date_keywords)
+    
+    def rerank_sources(self, results: List[Dict], query: str) -> List[Dict]:
+        """Rerank sources to prioritize website content over PDFs"""
+        try:
+            # Separate website and PDF sources
+            website_sources = []
+            pdf_sources = []
+            
+            for result in results:
+                if self.is_website_source(result):
+                    website_sources.append(result)
+                else:
+                    pdf_sources.append(result)
+            
+            # If date-related query, prioritize sources with future dates
+            if self.is_date_query(query):
+                website_sources = self.prioritize_future_dates(website_sources)
+                pdf_sources = self.prioritize_future_dates(pdf_sources)
+            
+            # Return websites first, then PDFs
+            reranked = website_sources + pdf_sources
+            logger.info(f"Reranked sources: {len(website_sources)} websites, {len(pdf_sources)} PDFs")
+            return reranked
+            
+        except Exception as e:
+            logging.error(f"Error reranking sources: {str(e)}")
+            return results  # Return original order if error
+    
+    def rerank_kb_response(self, kb_response: Dict, query: str) -> Dict:
+        """Rerank retrieval results within a knowledge base response"""
+        if 'retrievalResults' in kb_response and kb_response['retrievalResults']:
+            kb_response['retrievalResults'] = self.rerank_sources(kb_response['retrievalResults'], query)
+        return kb_response
+    
     def process_knowledge_base_response(self, kb_responses: List[Dict]) -> Tuple[str, List]:
         """Process multiple knowledge base responses and extract context and sources"""
         try:
@@ -568,14 +706,18 @@ Respond with ONLY the category name (greeting, farewell, knowledge_base, knowled
                                 
                             context += f"[Source {source_counter}]: Meeting Date: {meeting_date} source_url: {source_url} School Domain: {domain} \n {chunk_text}\n\n"
                             
-                            # Extract source metadata
+                            # Extract source metadata - only use original website URLs
                             source_info = {
                                 "filename": f"Source {source_counter}", 
                                 "url": None, 
-                                "s3Uri": None, 
-                                "presignedUrl": None
+                                "s3Uri": None
                             }
                             
+                            # Get original website URL from metadata
+                            if 'metadata' in result and 'source' in result['metadata']:
+                                source_info["url"] = source_url
+                            
+                            # Get S3 location for internal reference only
                             if 'location' in result:
                                 s3_location = result['location'].get('s3Location', {})
                                 if 'uri' in s3_location:
@@ -583,18 +725,6 @@ Respond with ONLY the category name (greeting, farewell, knowledge_base, knowled
                                     filename = s3_uri.split('/')[-1]
                                     source_info["filename"] = filename
                                     source_info["s3Uri"] = s3_uri
-                                    
-                                    # Generate pre-signed URL with page number if available
-                                    presigned_url = self.generate_presigned_url(s3_uri)
-                                    page_number = result.get('metadata', {}).get('x-amz-bedrock-kb-document-page-number')
-                                    if page_number and presigned_url:
-                                        source_info["presignedUrl"] = f"{presigned_url}#page={page_number}"
-                                    else:
-                                        source_info["presignedUrl"] = presigned_url
-                                    
-                                    # Check for source URL in metadata
-                                    if 'metadata' in result and 'source' in result['metadata']:
-                                        source_info["url"] = source_url
                             
                             sources.append(source_info)
                             source_counter += 1
@@ -659,6 +789,13 @@ What would you like to know about Orcutt Schools?"""
 You are an intelligent assistant for Orcutt Schools that provides helpful information to students, parents, staff, and community members.
  
 Today's date is {date.today()}. Answer according to today's date
+
+IMPORTANT - DATE-AWARE RESPONSES:
+When answering questions about events, schedules, or dates:
+- Focus on upcoming/future dates relative to today
+- Use phrases like "The next..." or "Upcoming..." when appropriate
+- Example: "The next parent-teacher conferences are scheduled for March 15, 2026"
+- If only past dates are available, acknowledge they have passed
 
 Recent conversation context:
 {conversation_context}

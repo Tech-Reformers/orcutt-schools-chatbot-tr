@@ -6,7 +6,7 @@ import SchoolSelector from './SchoolSelector';
 import PDFDownload from './PDFDownload';
 import { useChat } from '../hooks/useChat';
 import '../styles/Chat.css';
-import logo from '../assets/logo.png';
+// import logo from '../assets/logo.png';
 
 const ChatInterface = () => {
   const {
@@ -24,8 +24,8 @@ const ChatInterface = () => {
   } = useChat();
 
   const handleSourceClick = async (source) => {
-    if (source.presignedUrl) {
-      window.open(source.presignedUrl, '_blank');
+    if (source.url) {
+      window.open(source.url, '_blank');
     }
   };
 
