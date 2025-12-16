@@ -253,12 +253,7 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 
 **Impact:** More comprehensive context for the chatbot to work with, improving answer accuracy.
 
-### 3. Upgraded to Claude Sonnet 4.5 (Commit: 3ed78d4)
-**Problem:** Using legacy Claude 3.5 Sonnet V2 model.
-
-**Solution:** Upgraded to the latest Claude Sonnet 4.5 model (`anthropic.claude-sonnet-4-5-20250929-v1:0`).
-
-**Impact:** Better reasoning capabilities and improved handling of conflicting information sources.
+**Note:** Attempted upgrade to Claude Sonnet 4.5 but reverted due to AWS Service Control Policy restrictions (Commits: 3ed78d4, d54bc7b, 83e328b). Currently using Claude 3.5 Sonnet V2.
 
 ## Support
 
