@@ -233,7 +233,7 @@ class OrcuttChatbot:
                         message = message + " " + selected_school
                         kb_response_school_specific = self.query_knowledge_base_semantic(message, knowledge_base_id, school_url_dict[selected_school.strip()], 10)
 
-                    kb_response_main_domain = self.query_knowledge_base_semantic(message, knowledge_base_id, "orcuttschools.net", 20)
+                    kb_response_main_domain = self.query_knowledge_base_semantic(message, knowledge_base_id, "orcuttschools.net", 40)
                     context, sources = self.process_knowledge_base_response([kb_response_main_domain, kb_response_school_specific])
             
             # Step 5: Generate response with conversation context
