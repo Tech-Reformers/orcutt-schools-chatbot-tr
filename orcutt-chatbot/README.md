@@ -232,6 +232,34 @@ aws sso login --profile <profile-name>
 ```
 
 
+## Improvements Made by Tech Reformers
+
+This fork includes the following enhancements to improve chatbot accuracy and response quality:
+
+### 1. Enhanced Source Prioritization (Commit: ab41080)
+**Problem:** Chatbot was giving outdated answers from old board minutes PDFs instead of current website content.
+
+**Solution:** Updated the system prompt to explicitly prioritize website sources over PDF documents:
+- Website content is now treated as more current and authoritative
+- PDFs are only used when website sources don't contain the needed information
+- Removed meeting_date prioritization that was favoring recent board minutes
+
+**Impact:** Chatbot now provides more current, accurate information from the district website.
+
+### 2. Increased Knowledge Base Retrieval Results (Commit: b01de48)
+**Problem:** Relevant information wasn't being retrieved because the result set was too small.
+
+**Solution:** Increased main domain query results from 20 to 40.
+
+**Impact:** More comprehensive context for the chatbot to work with, improving answer accuracy.
+
+### 3. Upgraded to Claude Sonnet 4.5 (Commit: 3ed78d4)
+**Problem:** Using legacy Claude 3.5 Sonnet V2 model.
+
+**Solution:** Upgraded to the latest Claude Sonnet 4.5 model (`anthropic.claude-sonnet-4-5-20250929-v1:0`).
+
+**Impact:** Better reasoning capabilities and improved handling of conflicting information sources.
+
 ## Support
 
 For any queries or issues with this fork, please contact:
