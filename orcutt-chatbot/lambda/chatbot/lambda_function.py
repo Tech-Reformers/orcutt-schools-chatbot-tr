@@ -516,17 +516,17 @@ Respond with ONLY the category name (greeting, farewell, knowledge_base, knowled
             return True
     
     def query_knowledge_base_semantic(self, query: str, knowledge_base_id: str, metadata_filter: str, number_of_results: int) -> Dict:
-        """Query Knowledge Base using only semantic search with z-score filtering"""
+        """Query Knowledge Base using hybrid search (semantic + keyword matching)"""
         logger.info(f"metadata_filter: {metadata_filter}")
         try:
-            # Use only semantic search
+            # Use hybrid search (combines semantic similarity with keyword/BM25 matching)
             response = self.bedrock_agent_runtime.retrieve(
                 knowledgeBaseId=knowledge_base_id,
                 retrievalQuery={'text': query},
                 retrievalConfiguration={
                     'vectorSearchConfiguration': {
                         'numberOfResults': number_of_results,
-                        'overrideSearchType': 'SEMANTIC',
+                        'overrideSearchType': 'HYBRID',
                         'filter': {
                             'equals': {
                                 'key': 'domain',

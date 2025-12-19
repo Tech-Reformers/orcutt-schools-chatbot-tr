@@ -64,3 +64,13 @@ This spec addresses a critical accuracy issue where the chatbot retrieves and us
 2. WHEN a source contains both past and future dates THEN the system SHALL use that source and focus on the future dates in the response
 3. WHEN a source contains only past dates THEN the system SHALL rank it lower than sources with future or current dates
 4. WHEN generating a response about dates THEN the system SHALL reference the current date to provide context (e.g., "The next parent-teacher conferences are...")
+
+### Requirement 6
+
+**User Story:** As a user asking about specific terms or phrases, I want the system to find pages containing those exact words, so that I receive accurate answers to direct questions.
+
+#### Acceptance Criteria
+
+1. WHEN a user asks a question containing specific terms or phrases THEN the system SHALL retrieve sources that contain those exact terms
+2. WHEN a source contains exact keyword matches for the query THEN the system SHALL rank that source higher than sources with only semantic similarity
+3. WHEN the system performs knowledge base retrieval THEN the system SHALL use hybrid search combining semantic similarity and keyword matching

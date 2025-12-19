@@ -6,19 +6,26 @@ This design improves the chatbot's source prioritization to prefer website conte
 
 ## Architecture
 
-The current system retrieves sources using semantic search from AWS Bedrock Knowledge Base, which returns results ranked by vector similarity. We will add a post-retrieval reranking step that applies business logic to boost website sources and filter based on dates.
+The current system retrieves sources using semantic search from AWS Bedrock Knowledge Base, which returns results ranked by vector similarity. We will:
+1. Switch from pure semantic search to hybrid search (semantic + keyword matching)
+2. Add a post-retrieval reranking step that applies business logic to boost website sources and filter based on dates
 
 **Current Flow:**
 1. User query → Semantic search → Ranked results → Claude generates response
 
 **New Flow:**
-1. User query → Semantic search → Ranked results → **Rerank (boost websites, filter dates)** → Claude generates response
+1. User query → **Hybrid search (semantic + keyword)** → Ranked results → **Rerank (boost websites, filter dates)** → Claude generates response
 
 ## Components and Interfaces
 
 ### Backend Changes
 
 **File**: `lambda/chatbot/lambda_function.py`
+
+**Modified Method**: `query_knowledge_base_semantic()`
+- Change `overrideSearchType` from `'SEMANTIC'` to `'HYBRID'`
+- Enables keyword matching in addition to semantic search
+- AWS Bedrock automatically balances semantic and keyword scores
 
 **New Method**: `rerank_sources_by_type()`
 - Takes retrieval results and query
@@ -101,6 +108,10 @@ This ensures websites always appear before PDFs in the context, regardless of se
 ### Property 4: Fallback to PDFs
 *For any* query where no website sources are available, PDF sources SHALL be used without penalty.
 **Validates: Requirements 4.2**
+
+### Property 5: Keyword Matching
+*For any* query containing specific terms, sources containing exact keyword matches SHALL be retrieved and ranked appropriately by the hybrid search algorithm.
+**Validates: Requirements 6.1, 6.2, 6.3**
 
 ## Error Handling
 

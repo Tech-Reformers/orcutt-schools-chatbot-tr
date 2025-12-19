@@ -39,10 +39,17 @@
   - Add example: "The next parent-teacher conferences are..."
   - _Requirements: 5.4_
 
-- [x] 7. Test and deploy
+- [x] 7. Enable hybrid search for keyword matching
+  - Modify `query_knowledge_base_semantic()` method
+  - Change `overrideSearchType` from `'SEMANTIC'` to `'HYBRID'`
+  - This enables both semantic similarity and keyword matching (BM25)
+  - _Requirements: 6.1, 6.2, 6.3_
+
+- [ ] 8. Test and deploy
   - Deploy backend changes
-  - Test with "Who are the Executive Directors?" query
+  - Test with "Who are the Executive Directors?" query (should now find exact match)
   - Test with "When are parent-teacher conferences?" query
   - Test with PDF-only query to ensure fallback works
   - Verify consistency across different phrasings
+  - Test that existing queries still work correctly
   - _Requirements: All_
