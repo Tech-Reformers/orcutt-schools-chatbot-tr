@@ -7,15 +7,15 @@ This design improves the chatbot's source prioritization to prefer website conte
 ## Architecture
 
 The current system retrieves sources using semantic search from AWS Bedrock Knowledge Base, which returns results ranked by vector similarity. We will:
-1. Add query preprocessing to extract meaningful keywords from verbose queries
-2. Switch from pure semantic search to hybrid search (semantic + keyword matching)
+1. Switch from pure semantic search to hybrid search (semantic + keyword matching)
+2. Increase the number of retrieved results to ensure relevant content is found
 3. Add a post-retrieval reranking step that applies business logic to boost website sources and filter based on dates
 
 **Current Flow:**
 1. User query → Semantic search → Ranked results → Claude generates response
 
 **New Flow:**
-1. User query → **Keyword Extraction** → **Hybrid search (semantic + keyword)** → Ranked results → **Rerank (boost websites, filter dates)** → Claude generates response
+1. User query → **Hybrid search (semantic + keyword, 60 results)** → Ranked results → **Rerank (boost websites, filter dates)** → Claude generates response
 
 ## Components and Interfaces
 
@@ -23,20 +23,12 @@ The current system retrieves sources using semantic search from AWS Bedrock Know
 
 **File**: `lambda/chatbot/lambda_function.py`
 
-**New Method**: `extract_keywords_for_retrieval()`
-- Takes user query as input
-- For short queries (≤3 words), returns query unchanged
-- For longer queries, uses Nova Lite to extract 3-5 important keywords
-- Returns keyword string optimized for retrieval
-- Removes filler words (how, do, I, a, the, for, etc.)
-- Preserves meaningful content words (nouns, verbs, important terms)
-
 **Modified Method**: `query_knowledge_base_semantic()`
-- Accepts original query and extracted keywords
-- Uses extracted keywords for retrieval when available
 - Change `overrideSearchType` from `'SEMANTIC'` to `'HYBRID'`
 - Enables keyword matching in addition to semantic search
 - AWS Bedrock automatically balances semantic and keyword scores
+- Increase `numberOfResults` from 40 to 60 for main domain queries
+- Ensures sufficient results are retrieved to find relevant content
 
 **New Method**: `rerank_sources_by_type()`
 - Takes retrieval results and query
@@ -54,9 +46,8 @@ The current system retrieves sources using semantic search from AWS Bedrock Know
 - Maintains existing source metadata structure
 
 **Modified Method**: `process_chat_request()`
-- Calls `extract_keywords_for_retrieval()` before querying knowledge base
-- Passes both original query and keywords to retrieval methods
-- Uses original query for Claude's response generation
+- Calls `query_knowledge_base_semantic()` with increased result count
+- Uses user query directly without preprocessing
 
 ### Source Type Detection
 
@@ -64,23 +55,20 @@ Sources will be classified as "website" or "pdf" based on metadata:
 - **Website**: `source_url` ends with `.net` or `.com` (not `.pdf`)
 - **PDF**: `source_url` ends with `.pdf` OR s3Uri contains `.pdf`
 
-### Query Preprocessing
+### Retrieval Strategy
 
-For effective keyword matching in hybrid search:
-- Check if query starts with question words (who, what, when, where, why, which)
-- Question word queries: use as-is (question context is important)
-- Analyze query length (word count)
-- Short queries (≤3 words): use as-is (already focused)
-- Long non-question queries (>3 words): extract keywords using Nova Lite
-- Nova prompt: "Extract the 3-5 most important keywords from this question for searching a knowledge base"
-- Result: focused keyword string that emphasizes content words
+For effective hybrid search:
+- Use user queries directly without preprocessing
+- Hybrid search combines semantic similarity with BM25 keyword matching
+- AWS Bedrock automatically balances the two scoring methods
+- Retrieve 60 results from main domain to ensure relevant content is found
+- Retrieve 10 results from school-specific domains when applicable
 
-**Examples:**
-- "Who is the Superintendent?" → use as-is (question word)
-- "What are school hours?" → use as-is (question word)
-- "pizza" → use as-is (short query)
-- "How do I sign up for a classroom pizza party?" → extract keywords → "pizza party classroom sign up"
-- Benefit: Preserves question context while removing filler words from verbose queries
+**Rationale:**
+- Simplicity: No complex query preprocessing needed
+- Reliability: Hybrid search handles both semantic and keyword matching
+- Coverage: 60 results ensures we don't miss relevant pages
+- AWS handles the complexity of balancing semantic vs keyword scores
 
 ### Date Extraction
 
@@ -147,9 +135,9 @@ This ensures websites always appear before PDFs in the context, regardless of se
 *For any* query containing specific terms, sources containing exact keyword matches SHALL be retrieved and ranked appropriately by the hybrid search algorithm.
 **Validates: Requirements 6.1, 6.2, 6.3**
 
-### Property 6: Keyword Extraction Effectiveness
-*For any* verbose non-question query (>3 words, not starting with question words), the extracted keywords SHALL contain the most important content words and SHALL exclude common filler words.
-**Validates: Requirements 6.4, 6.5, 6.6, 6.7**
+### Property 6: Sufficient Retrieval Coverage
+*For any* query, retrieving 60 results SHALL provide sufficient coverage to find relevant content even when it doesn't rank in the top 20.
+**Validates: Requirements 6.4**
 
 ## Error Handling
 
