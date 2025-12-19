@@ -67,16 +67,20 @@ Sources will be classified as "website" or "pdf" based on metadata:
 ### Query Preprocessing
 
 For effective keyword matching in hybrid search:
+- Check if query starts with question words (who, what, when, where, why, which)
+- Question word queries: use as-is (question context is important)
 - Analyze query length (word count)
 - Short queries (≤3 words): use as-is (already focused)
-- Long queries (>3 words): extract keywords using Nova Lite
+- Long non-question queries (>3 words): extract keywords using Nova Lite
 - Nova prompt: "Extract the 3-5 most important keywords from this question for searching a knowledge base"
 - Result: focused keyword string that emphasizes content words
 
-**Example:**
-- Original: "How do I sign up for a classroom pizza party?"
-- Extracted: "pizza party classroom sign up"
-- Benefit: Keyword matching focuses on important terms, not filler words
+**Examples:**
+- "Who is the Superintendent?" → use as-is (question word)
+- "What are school hours?" → use as-is (question word)
+- "pizza" → use as-is (short query)
+- "How do I sign up for a classroom pizza party?" → extract keywords → "pizza party classroom sign up"
+- Benefit: Preserves question context while removing filler words from verbose queries
 
 ### Date Extraction
 
@@ -144,8 +148,8 @@ This ensures websites always appear before PDFs in the context, regardless of se
 **Validates: Requirements 6.1, 6.2, 6.3**
 
 ### Property 6: Keyword Extraction Effectiveness
-*For any* verbose query (>3 words), the extracted keywords SHALL contain the most important content words and SHALL exclude common filler words.
-**Validates: Requirements 6.4, 6.5, 6.6**
+*For any* verbose non-question query (>3 words, not starting with question words), the extracted keywords SHALL contain the most important content words and SHALL exclude common filler words.
+**Validates: Requirements 6.4, 6.5, 6.6, 6.7**
 
 ## Error Handling
 

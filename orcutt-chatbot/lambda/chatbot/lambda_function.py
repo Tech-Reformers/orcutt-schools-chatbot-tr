@@ -428,14 +428,23 @@ class OrcuttChatbot:
     def extract_keywords_for_retrieval(self, query: str) -> str:
         """Extract important keywords from verbose queries for better retrieval"""
         try:
+            # Check if query starts with question words - these provide important context
+            query_lower = query.lower().strip()
+            question_words = ['who', 'what', 'when', 'where', 'why', 'which']
+            starts_with_question = any(query_lower.startswith(qw) for qw in question_words)
+            
+            if starts_with_question:
+                logger.info(f"Question word query, using as-is: {query}")
+                return query
+            
             # For short queries (3 words or fewer), use as-is
             word_count = len(query.split())
             if word_count <= 3:
                 logger.info(f"Short query ({word_count} words), using as-is: {query}")
                 return query
             
-            # Use Nova to extract keywords from longer queries
-            extraction_prompt = f"""Extract the 3-5 most important keywords from this question for searching a knowledge base. Focus on content words (nouns, verbs, important terms) and remove filler words (how, do, I, a, the, for, etc.).
+            # Use Nova to extract keywords from longer non-question queries
+            extraction_prompt = f"""Extract the 3-5 most important keywords from this question for searching a knowledge base. Focus on content words (nouns, verbs, important terms) and remove filler words (do, I, a, the, for, etc.).
 
 Return ONLY the keywords separated by spaces, no explanation.
 
