@@ -273,16 +273,23 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 
 **Impact:** Users can now click on sources and be taken directly to the original website pages. No more broken S3 links.
 
-### 5. Website Content Prioritization (Completed: 2025-12-16)
+### 5. Website Content Prioritization (Completed: 2025-12-19)
 **Problem:** Chatbot was retrieving and using outdated information from PDF documents instead of current website content, leading to inaccurate answers.
 
 **Solution:**
+- Switched from pure semantic search to hybrid search (semantic + BM25 keyword matching)
+- Increased retrieval results from 40 to 60 to ensure relevant content is found
 - Added source type detection to identify website vs PDF sources
 - Implemented reranking logic that always places website sources before PDF sources in results
 - Added date extraction and filtering to prioritize sources with future dates for date-related queries
 - Enhanced prompt with date-aware response guidance
 
-**Impact:** Website content now consistently appears before PDFs in search results, ensuring Claude uses current information. Date-related queries focus on upcoming events rather than past dates.
+**Impact:** 
+- Hybrid search combines meaning-based and keyword-based matching for better accuracy
+- Increased result count ensures relevant pages aren't missed
+- Website content consistently appears before PDFs in search results
+- Date-related queries focus on upcoming events rather than past dates
+- Simplified architecture - no complex query preprocessing needed
 
 **Note:** Attempted upgrade to Claude Sonnet 4.5 but reverted due to AWS Service Control Policy restrictions (Commits: 3ed78d4, d54bc7b, 83e328b). Currently using Claude 3.5 Sonnet V2.
 
