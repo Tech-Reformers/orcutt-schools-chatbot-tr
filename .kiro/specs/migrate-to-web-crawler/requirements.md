@@ -86,3 +86,14 @@ This spec addresses the migration from a custom webscraper to AWS Bedrock's buil
 1. WHEN the migration is complete THEN the system SHALL no longer use the custom webscraper Lambda function
 2. WHEN the migration is complete THEN the system SHALL no longer require the webscraper layer or dependencies
 3. WHEN the migration is complete THEN the system SHALL document the web crawler configuration for future reference
+
+### Requirement 8
+
+**User Story:** As a customer administrator, I want to manage the web crawler through the AWS Console, so that I can update content and adjust settings without requiring developer assistance.
+
+#### Acceptance Criteria
+
+1. WHEN the customer needs to update content THEN the customer SHALL be able to trigger a web crawler sync job through the AWS Console
+2. WHEN the customer needs to adjust crawler settings THEN the customer SHALL be able to modify inclusion/exclusion filters through the AWS Console
+3. WHEN the migration is complete THEN the customer SHALL have documentation explaining how to manage the web crawler
+4. WHEN the customer manages the crawler THEN the customer SHALL be able to monitor crawl job status and view logs

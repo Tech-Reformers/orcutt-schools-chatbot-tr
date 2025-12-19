@@ -68,21 +68,30 @@
   - Test query: "Who is [specific staff member name]?"
   - _Requirements: 2.1, 2.2, 6.1, 6.2_
 
-- [ ] 10. Document web crawler configuration
+- [ ] 10. Create customer documentation for web crawler management
+  - Create step-by-step guide for triggering manual sync jobs
+  - Document how to view crawl job status and logs in AWS Console
+  - Document how to modify inclusion/exclusion filters
+  - Document how to add new seed URLs if needed
+  - Include screenshots of AWS Console navigation
+  - Document troubleshooting common issues
+  - _Requirements: 8.1, 8.2, 8.3, 8.4_
+
+- [ ] 11. Update README with web crawler information
   - Update README with web crawler setup instructions
   - Document seed URLs and filters used
-  - Document how to trigger manual sync
-  - Document how to monitor crawl jobs
+  - Link to customer management documentation
+  - Note that custom webscraper is deprecated
   - _Requirements: 7.3_
 
-- [ ] 11. Remove custom webscraper (optional, after validation)
+- [ ] 12. Remove custom webscraper (optional, after validation)
   - Remove webscraper Lambda function from CDK stack
   - Remove webscraper layer
   - Remove scripts/run_webscraper.sh
   - Update documentation
   - _Requirements: 7.1, 7.2_
 
-- [ ] 12. Final validation and comparison
+- [ ] 13. Final validation and comparison
   - Compare answer quality with old KB
   - Test all critical user queries
   - Verify no regressions

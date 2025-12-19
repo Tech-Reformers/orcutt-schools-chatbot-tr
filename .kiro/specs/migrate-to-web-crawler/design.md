@@ -232,6 +232,59 @@ domain_filter = None  # No filter applied, search all content
 - **Handling:** Fall back to no filter, log error
 - **User Impact:** May retrieve results from all domains
 
+## Customer Management
+
+### AWS Console Access
+
+**Customer administrators will need:**
+- AWS Console access with permissions for:
+  - Bedrock Knowledge Bases (read/write)
+  - CloudWatch Logs (read)
+  - S3 (read, for viewing indexed content)
+
+### Common Management Tasks
+
+**1. Trigger Manual Content Update:**
+```
+AWS Console → Bedrock → Knowledge Bases → [KB Name] → Data Sources → [Web Crawler] → Sync
+```
+- Click "Sync" button to start a new crawl
+- Monitor progress in the console
+- Typical sync time: 30-60 minutes
+
+**2. View Crawl Job Status:**
+```
+AWS Console → Bedrock → Knowledge Bases → [KB Name] → Data Sources → [Web Crawler] → Sync history
+```
+- View recent sync jobs
+- Check status (In Progress, Completed, Failed)
+- View number of documents indexed
+
+**3. Modify Crawler Settings:**
+```
+AWS Console → Bedrock → Knowledge Bases → [KB Name] → Data Sources → [Web Crawler] → Edit
+```
+- Add/remove seed URLs
+- Modify inclusion/exclusion filters
+- Adjust crawl depth
+- Change crawl rate
+
+**4. View Logs:**
+```
+AWS Console → CloudWatch → Log Groups → /aws/bedrock/knowledgebases/[KB-ID]
+```
+- View crawl errors
+- Check which URLs were indexed
+- Troubleshoot issues
+
+### Documentation for Customer
+
+Create a separate document: `docs/WEB_CRAWLER_MANAGEMENT.md` with:
+- Step-by-step instructions with screenshots
+- Common scenarios (adding new pages, updating content)
+- Troubleshooting guide
+- Contact information for technical support
+
 ## Testing Strategy
 
 ### Manual Testing
