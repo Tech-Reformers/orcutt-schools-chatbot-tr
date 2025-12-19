@@ -7,14 +7,15 @@ This design improves the chatbot's source prioritization to prefer website conte
 ## Architecture
 
 The current system retrieves sources using semantic search from AWS Bedrock Knowledge Base, which returns results ranked by vector similarity. We will:
-1. Switch from pure semantic search to hybrid search (semantic + keyword matching)
-2. Add a post-retrieval reranking step that applies business logic to boost website sources and filter based on dates
+1. Add query preprocessing to extract meaningful keywords from verbose queries
+2. Switch from pure semantic search to hybrid search (semantic + keyword matching)
+3. Add a post-retrieval reranking step that applies business logic to boost website sources and filter based on dates
 
 **Current Flow:**
 1. User query → Semantic search → Ranked results → Claude generates response
 
 **New Flow:**
-1. User query → **Hybrid search (semantic + keyword)** → Ranked results → **Rerank (boost websites, filter dates)** → Claude generates response
+1. User query → **Keyword Extraction** → **Hybrid search (semantic + keyword)** → Ranked results → **Rerank (boost websites, filter dates)** → Claude generates response
 
 ## Components and Interfaces
 
@@ -22,7 +23,17 @@ The current system retrieves sources using semantic search from AWS Bedrock Know
 
 **File**: `lambda/chatbot/lambda_function.py`
 
+**New Method**: `extract_keywords_for_retrieval()`
+- Takes user query as input
+- For short queries (≤3 words), returns query unchanged
+- For longer queries, uses Nova Lite to extract 3-5 important keywords
+- Returns keyword string optimized for retrieval
+- Removes filler words (how, do, I, a, the, for, etc.)
+- Preserves meaningful content words (nouns, verbs, important terms)
+
 **Modified Method**: `query_knowledge_base_semantic()`
+- Accepts original query and extracted keywords
+- Uses extracted keywords for retrieval when available
 - Change `overrideSearchType` from `'SEMANTIC'` to `'HYBRID'`
 - Enables keyword matching in addition to semantic search
 - AWS Bedrock automatically balances semantic and keyword scores
@@ -42,11 +53,30 @@ The current system retrieves sources using semantic search from AWS Bedrock Know
 - Calls reranking methods before processing sources
 - Maintains existing source metadata structure
 
+**Modified Method**: `process_chat_request()`
+- Calls `extract_keywords_for_retrieval()` before querying knowledge base
+- Passes both original query and keywords to retrieval methods
+- Uses original query for Claude's response generation
+
 ### Source Type Detection
 
 Sources will be classified as "website" or "pdf" based on metadata:
 - **Website**: `source_url` ends with `.net` or `.com` (not `.pdf`)
 - **PDF**: `source_url` ends with `.pdf` OR s3Uri contains `.pdf`
+
+### Query Preprocessing
+
+For effective keyword matching in hybrid search:
+- Analyze query length (word count)
+- Short queries (≤3 words): use as-is (already focused)
+- Long queries (>3 words): extract keywords using Nova Lite
+- Nova prompt: "Extract the 3-5 most important keywords from this question for searching a knowledge base"
+- Result: focused keyword string that emphasizes content words
+
+**Example:**
+- Original: "How do I sign up for a classroom pizza party?"
+- Extracted: "pizza party classroom sign up"
+- Benefit: Keyword matching focuses on important terms, not filler words
 
 ### Date Extraction
 
@@ -112,6 +142,10 @@ This ensures websites always appear before PDFs in the context, regardless of se
 ### Property 5: Keyword Matching
 *For any* query containing specific terms, sources containing exact keyword matches SHALL be retrieved and ranked appropriately by the hybrid search algorithm.
 **Validates: Requirements 6.1, 6.2, 6.3**
+
+### Property 6: Keyword Extraction Effectiveness
+*For any* verbose query (>3 words), the extracted keywords SHALL contain the most important content words and SHALL exclude common filler words.
+**Validates: Requirements 6.4, 6.5, 6.6**
 
 ## Error Handling
 

@@ -74,3 +74,6 @@ This spec addresses a critical accuracy issue where the chatbot retrieves and us
 1. WHEN a user asks a question containing specific terms or phrases THEN the system SHALL retrieve sources that contain those exact terms
 2. WHEN a source contains exact keyword matches for the query THEN the system SHALL rank that source higher than sources with only semantic similarity
 3. WHEN the system performs knowledge base retrieval THEN the system SHALL use hybrid search combining semantic similarity and keyword matching
+4. WHEN a user query contains multiple words including filler words THEN the system SHALL extract meaningful keywords to improve retrieval accuracy
+5. WHEN performing keyword extraction THEN the system SHALL prioritize content words (nouns, verbs, important terms) over function words (articles, prepositions, question words)
+6. WHEN a query is short (3 words or fewer) THEN the system SHALL use the query as-is without keyword extraction

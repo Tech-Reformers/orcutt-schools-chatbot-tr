@@ -228,12 +228,16 @@ class OrcuttChatbot:
                     selected_school = list(school_url_dict.keys())[int(query_type.split("_")[-1]) - 1]
                 knowledge_base_id = os.environ.get('KNOWLEDGE_BASE_ID')
                 if knowledge_base_id:
+                    # Extract keywords for better retrieval
+                    keywords = self.extract_keywords_for_retrieval(message)
+                    
                     if selected_school != "None":
                         # Add selected school to the query
-                        message = message + " " + selected_school
-                        kb_response_school_specific = self.query_knowledge_base_semantic(message, knowledge_base_id, school_url_dict[selected_school.strip()], 10)
+                        message_with_school = message + " " + selected_school
+                        keywords_with_school = keywords + " " + selected_school
+                        kb_response_school_specific = self.query_knowledge_base_semantic(message_with_school, knowledge_base_id, school_url_dict[selected_school.strip()], 10, keywords_with_school)
 
-                    kb_response_main_domain = self.query_knowledge_base_semantic(message, knowledge_base_id, "orcuttschools.net", 40)
+                    kb_response_main_domain = self.query_knowledge_base_semantic(message, knowledge_base_id, "orcuttschools.net", 40, keywords)
                     
                     # Rerank sources to prioritize website content
                     kb_response_main_domain = self.rerank_kb_response(kb_response_main_domain, message)
@@ -421,6 +425,54 @@ class OrcuttChatbot:
         
         return context
     
+    def extract_keywords_for_retrieval(self, query: str) -> str:
+        """Extract important keywords from verbose queries for better retrieval"""
+        try:
+            # For short queries (3 words or fewer), use as-is
+            word_count = len(query.split())
+            if word_count <= 3:
+                logger.info(f"Short query ({word_count} words), using as-is: {query}")
+                return query
+            
+            # Use Nova to extract keywords from longer queries
+            extraction_prompt = f"""Extract the 3-5 most important keywords from this question for searching a knowledge base. Focus on content words (nouns, verbs, important terms) and remove filler words (how, do, I, a, the, for, etc.).
+
+Return ONLY the keywords separated by spaces, no explanation.
+
+Question: "{query}"
+
+Keywords:"""
+
+            body = json.dumps({
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [{"text": extraction_prompt}]
+                    }
+                ],
+                "inferenceConfig": {
+                    "maxTokens": 20,
+                    "temperature": 0.1,
+                    "topP": 0.9
+                }
+            })
+            
+            response = self.bedrock_client.invoke_model(
+                modelId="us.amazon.nova-lite-v1:0",
+                contentType="application/json",
+                body=body
+            )
+            
+            response_body = json.loads(response['body'].read())
+            keywords = response_body['output']['message']['content'][0]['text'].strip()
+            logger.info(f"Extracted keywords from '{query}': {keywords}")
+            return keywords
+                
+        except Exception as e:
+            logging.error(f"Error extracting keywords with Nova: {str(e)}")
+            # Fallback to original query if extraction fails
+            return query
+    
     def classify_query_with_nova(self, user_input: str) -> str:
         """Classify the user query using Nova Pro/Lite"""
         try:
@@ -515,14 +567,18 @@ Respond with ONLY the category name (greeting, farewell, knowledge_base, knowled
             logging.error(f"Error applying Bedrock Guardrails: {str(e)}")
             return True
     
-    def query_knowledge_base_semantic(self, query: str, knowledge_base_id: str, metadata_filter: str, number_of_results: int) -> Dict:
+    def query_knowledge_base_semantic(self, query: str, knowledge_base_id: str, metadata_filter: str, number_of_results: int, keywords: str = None) -> Dict:
         """Query Knowledge Base using hybrid search (semantic + keyword matching)"""
         logger.info(f"metadata_filter: {metadata_filter}")
         try:
+            # Use keywords for retrieval if provided, otherwise use original query
+            retrieval_query = keywords if keywords else query
+            logger.info(f"Retrieval query: {retrieval_query}")
+            
             # Use hybrid search (combines semantic similarity with keyword/BM25 matching)
             response = self.bedrock_agent_runtime.retrieve(
                 knowledgeBaseId=knowledge_base_id,
-                retrievalQuery={'text': query},
+                retrievalQuery={'text': retrieval_query},
                 retrievalConfiguration={
                     'vectorSearchConfiguration': {
                         'numberOfResults': number_of_results,

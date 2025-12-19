@@ -45,9 +45,27 @@
   - This enables both semantic similarity and keyword matching (BM25)
   - _Requirements: 6.1, 6.2, 6.3_
 
-- [ ] 8. Test and deploy
+- [x] 8. Implement keyword extraction for verbose queries
+  - Create `extract_keywords_for_retrieval()` method
+  - Check query length (word count)
+  - For queries ≤3 words, return original query
+  - For queries >3 words, use Nova Lite to extract 3-5 important keywords
+  - Use similar pattern to `classify_query_with_nova()` method
+  - Return focused keyword string
+  - _Requirements: 6.4, 6.5, 6.6_
+
+- [x] 9. Integrate keyword extraction into retrieval flow
+  - Modify `process_chat_request()` to call keyword extraction before KB query
+  - Pass extracted keywords to `query_knowledge_base_semantic()`
+  - Update method signature to accept both original query and keywords
+  - Use keywords for retrieval, original query for Claude
+  - _Requirements: 6.4, 6.5, 6.6_
+
+- [ ] 10. Test and deploy
   - Deploy backend changes
-  - Test with "Who are the Executive Directors?" query (should now find exact match)
+  - Test with "Who are the Executive Directors?" query (should still work)
+  - Test with "How do I sign up for a classroom pizza party?" query (should now find pizza catering page)
+  - Test with short query "pizza" (should work as before)
   - Test with "When are parent-teacher conferences?" query
   - Test with PDF-only query to ensure fallback works
   - Verify consistency across different phrasings
