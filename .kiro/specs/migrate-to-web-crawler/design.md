@@ -29,46 +29,50 @@ This design migrates from a custom Lambda-based webscraper to AWS Bedrock's mana
 
 **Data Source Type:** Web Crawler
 
-**Seed URLs:**
+**Source URL:**
 ```
 https://www.orcuttschools.net
-https://orcuttacademy.orcuttschools.net
-https://oahs.orcuttschools.net
-https://lakeview.orcuttschools.net
-https://ojhs.orcuttschools.net
-https://aliceshaw.orcuttschools.net
-https://joenightingale.orcuttschools.net
-https://olgareed.orcuttschools.net
-https://pattersonroad.orcuttschools.net
-https://pinegrove.orcuttschools.net
-https://ralphdunlap.orcuttschools.net
-https://osis.orcuttschools.net
 ```
 
-**Crawl Scope:**
-- **Scope:** Host crawling (stay within specified domains)
-- **Include subdomains:** Yes
-- **Crawl depth:** 5 levels
+**Sync Scope:** Subdomains
+- Automatically discovers and crawls all subdomains (orcuttacademy, oahs, lakeview, ojhs, aliceshaw, joenightingale, olgareed, pattersonroad, pinegrove, ralphdunlap, osis)
 
-**Inclusion Filters:**
-```
-https://*.orcuttschools.net/*
-https://files.smartsites.parentsquare.com/*.pdf
-```
+**Authentication:** No Authentication
 
-**Exclusion Filters (if needed):**
+**Regex Include Patterns:**
 ```
-*/calendar/event/*  (if calendar events are too noisy)
-*/search/*
-*/login/*
+None
 ```
+**Important:** Leave include patterns empty. The Subdomains scope automatically handles all *.orcuttschools.net domains. Adding regex patterns can cause crawl failures.
+
+**Regex Exclude Patterns:**
+```
+None
+```
+**Important:** Leave exclude patterns empty initially. Adding regex patterns can cause crawl failures. The semantic search naturally filters out less relevant content like calendar events.
+
+**External Content:**
+- ParentSquare PDFs cannot be crawled due to robots.txt restrictions on their domain
+- The web crawler respects robots.txt and will skip blocked domains
+- Main school website content (2800+ pages) is successfully indexed
+
+**Parsing Strategy:** Amazon Bedrock Default Parser
+
+**Chunking Strategy:** Semantic chunking
+- **Buffer:** 1
+- **Max tokens:** 300
+- **Breakpoint percentile threshold:** 95
+
+**Embeddings Model:** Titan Text Embeddings v2
+- **Embedding type:** Float vector embeddings
+- **Vector dimensions:** 1024
+
+**Vector Store:** Quick create vector store (recommended)
+- **Type:** Amazon OpenSearch Serverless
 
 **Content Types:**
 - HTML pages
 - PDF documents
-
-**Crawl Rate:**
-- Default (respects robots.txt)
 
 ### Code Changes
 

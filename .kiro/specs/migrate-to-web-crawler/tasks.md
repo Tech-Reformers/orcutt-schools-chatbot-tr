@@ -1,26 +1,37 @@
 # Implementation Plan
 
-- [ ] 1. Create new Knowledge Base with web crawler
+- [x] 1. Create new Knowledge Base - Step 1: Provide details
   - Go to AWS Bedrock Console → Knowledge Bases → Create
-  - Name: "OrcuttSchoolsKB-WebCrawler"
-  - Choose "Web Crawler" as data source
-  - Configure embedding model: amazon.titan-embed-text-v2:0
+  - Knowledge Base name: "OrcuttSchoolsKB-WebCrawler"
+  - Knowledge Base description: (optional)
+  - Service role: AmazonBedrockExecutionRoleForKnowledgeBase_kwns0 (or auto-create)
+  - Knowledge base type: Knowledge base use vector store
+  - Data source type: Web Crawler
   - _Requirements: 1.1_
 
-- [ ] 2. Configure web crawler seed URLs
-  - Add all 12 school domain URLs as seed URLs
-  - Main: https://www.orcuttschools.net
-  - Schools: orcuttacademy, oahs, lakeview, ojhs, aliceshaw, joenightingale, olgareed, pattersonroad, pinegrove, ralphdunlap, osis
-  - _Requirements: 5.1_
+- [ ] 2. Configure data source - Step 2: Configure data source
+  - Data source name: (auto-generated or custom)
+  - Source URL: https://www.orcuttschools.net
+  - Sync scope: Subdomains (automatically discovers all 12 school subdomains)
+  - Authentication: No Authentication
+  - Regex include patterns: None (leave empty - patterns cause crawl failures)
+  - Regex exclude patterns: None (leave empty - patterns cause crawl failures)
+  - Note: Subdomains scope automatically crawls all *.orcuttschools.net domains
+  - Note: ParentSquare PDFs will fail due to robots.txt restrictions (expected)
+  - _Requirements: 5.1, 5.2_
 
-- [ ] 3. Configure crawl scope and filters
-  - Set crawl scope to "Host crawling"
-  - Enable subdomain crawling
-  - Set crawl depth to 5
-  - Add inclusion filter: https://*.orcuttschools.net/*
-  - Add inclusion filter for external PDFs: https://files.smartsites.parentsquare.com/*.pdf
-  - Add exclusion filters if needed (calendar events, search pages)
-  - _Requirements: 5.2, 5.3_
+- [ ] 3. Configure data storage and processing - Step 3
+  - Parsing strategy: Amazon Bedrock Default Parser
+  - Chunking strategy: Semantic chunking
+    - Buffer: 1
+    - Max tokens: 300
+    - Breakpoint percentile threshold: 95
+  - Embeddings model: Titan Text Embeddings v2
+    - Embedding type: Float vector embeddings
+    - Vector dimensions: 1024
+  - Vector store: Quick create vector store - recommended
+    - Type: Amazon OpenSearch Serverless
+  - _Requirements: 5.3_
 
 - [ ] 4. Run initial web crawler sync
   - Start the crawl job

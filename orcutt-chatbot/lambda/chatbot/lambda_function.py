@@ -231,9 +231,19 @@ class OrcuttChatbot:
                     if selected_school != "None":
                         # Add selected school to the query
                         message_with_school = message + " " + selected_school
-                        kb_response_school_specific = self.query_knowledge_base_semantic(message_with_school, knowledge_base_id, school_url_dict[selected_school.strip()], 10)
+                        kb_response_school_specific = self.query_knowledge_base_semantic(
+                            message_with_school, 
+                            knowledge_base_id, 
+                            domain_filter=school_url_dict[selected_school.strip()], 
+                            number_of_results=10
+                        )
 
-                    kb_response_main_domain = self.query_knowledge_base_semantic(message, knowledge_base_id, "orcuttschools.net", 60)
+                    kb_response_main_domain = self.query_knowledge_base_semantic(
+                        message, 
+                        knowledge_base_id, 
+                        domain_filter="orcuttschools.net", 
+                        number_of_results=60
+                    )
                     
                     # Rerank sources to prioritize website content
                     kb_response_main_domain = self.rerank_kb_response(kb_response_main_domain, message)
@@ -515,27 +525,31 @@ Respond with ONLY the category name (greeting, farewell, knowledge_base, knowled
             logging.error(f"Error applying Bedrock Guardrails: {str(e)}")
             return True
     
-    def query_knowledge_base_semantic(self, query: str, knowledge_base_id: str, metadata_filter: str, number_of_results: int) -> Dict:
-        """Query Knowledge Base using hybrid search (semantic + keyword matching)"""
-        logger.info(f"metadata_filter: {metadata_filter}")
+    def query_knowledge_base_semantic(self, query: str, knowledge_base_id: str, domain_filter: str = None, number_of_results: int = 60) -> Dict:
+        """Query Knowledge Base using hybrid search with optional domain filtering"""
+        logger.info(f"domain_filter: {domain_filter}")
         logger.info(f"Retrieval query: {query}")
         try:
-            # Use hybrid search (combines semantic similarity with keyword/BM25 matching)
+            config = {
+                'vectorSearchConfiguration': {
+                    'numberOfResults': number_of_results,
+                    'overrideSearchType': 'HYBRID'
+                }
+            }
+            
+            # Add domain filter if provided (for school-specific queries)
+            if domain_filter:
+                config['vectorSearchConfiguration']['filter'] = {
+                    'startsWith': {
+                        'key': 'x-amz-bedrock-kb-source-uri',
+                        'value': f'https://{domain_filter}'
+                    }
+                }
+            
             response = self.bedrock_agent_runtime.retrieve(
                 knowledgeBaseId=knowledge_base_id,
                 retrievalQuery={'text': query},
-                retrievalConfiguration={
-                    'vectorSearchConfiguration': {
-                        'numberOfResults': number_of_results,
-                        'overrideSearchType': 'HYBRID',
-                        'filter': {
-                            'equals': {
-                                'key': 'domain',
-                                'value': metadata_filter
-                            }
-                        }
-                    }
-                }
+                retrievalConfiguration=config
             )            
             return response
             
@@ -690,42 +704,28 @@ Respond with ONLY the category name (greeting, farewell, knowledge_base, knowled
                         if 'content' in result and 'text' in result['content']:
                             chunk_text = result['content']['text']
 
-                            if 'meeting_date' in result['metadata']:
-                                meeting_date = result['metadata']['meeting_date']
-                            else:
-                                meeting_date = "NA"
-
-                            if 'source' in result['metadata']:
-                                source_url = result['metadata']['source']
-                            else:
-                                source_url = "NA"
-
-                            if 'domain' in result['metadata']:
-                                domain = next((k for k, v in school_url_dict.items() if v == result['metadata']['domain']), None) #get name of school from the dictionary
-                            else:
-                                domain = "NA"
-                                
-                            context += f"[Source {source_counter}]: Meeting Date: {meeting_date} source_url: {source_url} School Domain: {domain} \n {chunk_text}\n\n"
+                            # Extract source URI from standard Bedrock metadata
+                            source_uri = result.get('metadata', {}).get('x-amz-bedrock-kb-source-uri', 'NA')
+                            
+                            # Extract domain from URI for school name mapping
+                            from urllib.parse import urlparse
+                            domain = urlparse(source_uri).netloc if source_uri != 'NA' else 'NA'
+                            
+                            # Map domain to school name if applicable
+                            school_name = next((k for k, v in school_url_dict.items() 
+                                              if v == domain), domain)
+                            
+                            # Handle meeting_date if present (optional field)
+                            meeting_date = result.get('metadata', {}).get('meeting_date', 'NA')
+                            
+                            context += f"[Source {source_counter}]: source_url: {source_uri} School: {school_name}\n{chunk_text}\n\n"
                             
                             # Extract source metadata - only use original website URLs
                             source_info = {
                                 "filename": f"Source {source_counter}", 
-                                "url": None, 
-                                "s3Uri": None
+                                "url": source_uri if source_uri != 'NA' else None, 
+                                "s3Uri": None  # Not applicable for web crawler
                             }
-                            
-                            # Get original website URL from metadata
-                            if 'metadata' in result and 'source' in result['metadata']:
-                                source_info["url"] = source_url
-                            
-                            # Get S3 location for internal reference only
-                            if 'location' in result:
-                                s3_location = result['location'].get('s3Location', {})
-                                if 'uri' in s3_location:
-                                    s3_uri = s3_location['uri']
-                                    filename = s3_uri.split('/')[-1]
-                                    source_info["filename"] = filename
-                                    source_info["s3Uri"] = s3_uri
                             
                             sources.append(source_info)
                             source_counter += 1
