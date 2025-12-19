@@ -50,7 +50,7 @@
   - Ensures sufficient coverage to find relevant content
   - _Requirements: 6.4_
 
-- [ ] 9. Test and deploy
+- [x] 9. Test and deploy
   - Deploy backend changes
   - Test with "Who is the Superintendent?" query
   - Test with "Who are the Executive Directors?" query
