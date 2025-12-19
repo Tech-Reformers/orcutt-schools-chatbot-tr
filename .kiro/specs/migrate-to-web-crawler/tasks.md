@@ -52,12 +52,14 @@
   - _Requirements: 6.1, 6.2, 6.3_
 
 - [ ] 8. Test school-specific filtering
-  - Select "Pine Grove Elementary" in UI
-  - Test: "When does school start?"
-  - Verify results are filtered to Pine Grove domain
-  - Test with other schools
+  - Select "Pine Grove Elementary" in UI dropdown
+  - Test: "When does school start?" (without mentioning Pine Grove in query)
+  - Verify results are filtered to Pine Grove domain only
+  - Verify answer is specific to Pine Grove
+  - Test with other schools (Lakeview, Alice Shaw, etc.)
   - Verify filtering works for all schools
-  - _Requirements: 3.1, 3.2, 3.3_
+  - Test with no school selected - verify searches all domains
+  - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
 - [ ] 9. Verify external content capture
   - Check if bus schedules (external PDFs) are indexed

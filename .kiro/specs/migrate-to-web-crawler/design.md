@@ -140,10 +140,18 @@ def process_knowledge_base_response(self, kb_responses: List[Dict]) -> Tuple[str
 
 ### Domain Filtering Logic
 
+**How it works:**
+1. User selects school from UI dropdown (e.g., "Pine Grove Elementary")
+2. Frontend sends `selectedSchool` parameter to backend
+3. Backend maps school name to domain and applies filter
+4. User can ask questions without mentioning the school name
+
 **For school-specific queries:**
 ```python
-# User selects "Pine Grove Elementary"
-domain_filter = "pinegrove.orcuttschools.net"
+# User selects "Pine Grove Elementary" in UI
+# User asks: "When does school start?" (no school name in query)
+selected_school = "Pine Grove Elementary"
+domain_filter = school_url_dict[selected_school]  # "pinegrove.orcuttschools.net"
 
 # Filter becomes:
 {
@@ -152,12 +160,16 @@ domain_filter = "pinegrove.orcuttschools.net"
         'value': 'https://pinegrove.orcuttschools.net'
     }
 }
+# Results: Only content from pinegrove.orcuttschools.net
 ```
 
 **For general queries:**
 ```python
-# No school selected
+# No school selected in UI
+# User asks: "When does school start?"
+selected_school = None
 domain_filter = None  # No filter applied, search all content
+# Results: Content from all school domains
 ```
 
 ## Data Models

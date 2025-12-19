@@ -38,13 +38,14 @@ This spec addresses the migration from a custom webscraper to AWS Bedrock's buil
 
 ### Requirement 3
 
-**User Story:** As a user asking school-specific questions, I want the chatbot to filter results by school domain, so that I receive relevant information for the selected school.
+**User Story:** As a user asking school-specific questions, I want to select a school from the dropdown and ask questions without repeating the school name, so that I can get relevant information for that school.
 
 #### Acceptance Criteria
 
-1. WHEN a user selects a specific school THEN the system SHALL filter knowledge base results to that school's subdomain
-2. WHEN filtering by school domain THEN the system SHALL use the source URI metadata field with a startsWith filter
-3. WHEN no school is selected THEN the system SHALL search across all domains
+1. WHEN a user selects a specific school from the UI dropdown THEN the system SHALL automatically filter knowledge base results to that school's subdomain
+2. WHEN a school is selected and the user asks "When does school start?" THEN the system SHALL return information specific to the selected school without requiring the school name in the query
+3. WHEN filtering by school domain THEN the system SHALL use the source URI metadata field with a startsWith filter
+4. WHEN no school is selected THEN the system SHALL search across all domains
 
 ### Requirement 4
 
