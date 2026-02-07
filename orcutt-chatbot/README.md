@@ -295,17 +295,163 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 
 ## Known Limitations
 
-### Webscraper Limitations
-1. **External PDFs Not Captured**: PDFs hosted on external domains (e.g., ParentSquare, SmartSites) are not downloaded, even when linked from the main website. This affects content like bus schedules and forms.
-2. **JavaScript/Dynamic Content**: Pages that load content dynamically via JavaScript (like paginated staff directories) are not fully captured. Only the initial page load is scraped.
-3. **Pagination**: Multi-page content requiring "next" button clicks is not followed.
+### Web Crawler Knowledge Base
+**Current Status (as of 2025-02-07):** The chatbot uses AWS Bedrock's managed web crawler for content ingestion.
+
+**Configuration:**
+- Knowledge Base ID: `V3OVONSOBC`
+- Chunking: Semantic, 500 tokens, buffer 1, breakpoint 95
+- Indexed: ~2800 pages from all school subdomains
+
+**Known Issues:**
+1. **Specific Pages Not Retrieved**: Some queries fail to find their target pages even though they're indexed:
+   - "Who are the Executive Directors?" - doesn't find http://orcuttschools.net/33975_3
+   - "How do I sign up for a classroom pizza party?" - doesn't find https://www.orcuttschools.net/34729_3
+   - Root cause: Likely JavaScript-rendered content or unusual page structure
+
+2. **External PDFs Not Captured**: PDFs hosted on external domains (e.g., ParentSquare) are blocked by robots.txt and cannot be crawled.
 
 ### Search Quality
-1. **Semantic Search Limitations**: Some queries may not retrieve the most relevant pages due to vector similarity scoring. For example, "Who are the Executive Directors?" may not find the Executive Team page even though it exists.
+- Hybrid search (semantic + keyword) is used but some specific queries still don't retrieve the correct pages
+- Larger chunk sizes (500 tokens vs 300) and overlap (buffer 1) help but don't solve all cases
 
-**Future Work**: Specs have been created to address these limitations:
-- External PDF Scraping & JavaScript Content (`.kiro/specs/external-pdf-scraping/`)
-- These improvements require webscraper enhancements including headless browser support
+**Workaround for Critical Pages:**
+- Consider manually adding problematic pages as documents to the Knowledge Base
+- Or work with web team to ensure pages are properly structured for crawling
+
+## Operations Guide for IT Team
+
+### Daily Operations
+
+**No daily maintenance required** - the system runs automatically.
+
+### Content Updates
+
+**When website content changes, trigger a Knowledge Base sync:**
+
+1. Go to AWS Console → Bedrock → Knowledge Bases
+2. Select Knowledge Base: `OrcuttSchoolsKB-WebCrawler-v2` (ID: V3OVONSOBC)
+3. Click on the Data Source
+4. Click "Sync" button
+5. Monitor sync progress (typically 2-3 hours for full site)
+
+**Sync frequency recommendations:**
+- After major website updates: Immediately
+- Routine updates: Weekly or bi-weekly
+- Before important events: Day before
+
+### Monitoring
+
+**Check chatbot health:**
+1. Visit: https://d3dolln1x7yei7.cloudfront.net
+2. Test with standard queries:
+   - "Who is the Superintendent?"
+   - "What are the school hours?"
+   - "How do I enroll my child?"
+
+**Check logs for errors:**
+1. AWS Console → CloudWatch → Log Groups
+2. Select: `/aws/lambda/OrcuttChatbotStack-dev-ChatbotLambda...`
+3. Look for ERROR messages in recent logs
+
+**Monitor costs:**
+1. AWS Console → Cost Explorer
+2. Filter by service: Bedrock, Lambda, CloudFront
+3. Set up billing alerts if needed
+
+### Troubleshooting
+
+**Chatbot not responding:**
+1. Check Lambda function is running (AWS Console → Lambda)
+2. Check API Gateway endpoint is accessible
+3. Check CloudWatch logs for errors
+
+**Incorrect or outdated answers:**
+1. Verify Knowledge Base sync completed successfully
+2. Check if the correct page exists on the website
+3. Manually test retrieval in Bedrock console
+
+**High costs:**
+1. Check CloudWatch for unusual traffic patterns
+2. Verify no infinite loops in Lambda functions
+3. Review Bedrock usage metrics
+
+### Making Code Changes
+
+**Prerequisites:**
+- Git installed
+- AWS CLI configured with SSO profile `orcutt-ai`
+- Python 3.13+ with virtual environment
+- Node.js 20+ (for CDK)
+- Docker Desktop running
+
+**Deployment process:**
+```bash
+# 1. Clone repository
+git clone https://github.com/Tech-Reformers/orcutt-schools-chatbot-tr
+cd orcutt-schools-chatbot-tr/orcutt-chatbot
+
+# 2. Activate virtual environment
+source venv/bin/activate
+
+# 3. Login to AWS
+aws sso login --profile orcutt-ai
+
+# 4. Make your code changes
+# Edit files in lambda/chatbot/ or infrastructure/
+
+# 5. Deploy changes
+export CDK_DEFAULT_ACCOUNT=785054116835
+export CDK_DEFAULT_REGION=us-west-2
+cdk deploy --profile orcutt-ai --require-approval never
+
+# 6. Test changes
+# Visit https://d3dolln1x7yei7.cloudfront.net
+
+# 7. Commit to git
+git add -A
+git commit -m "Description of changes"
+git push
+```
+
+### Key Configuration Files
+
+**Lambda Function:**
+- Code: `orcutt-chatbot/lambda/chatbot/lambda_function.py`
+- Environment variables set in: `orcutt-chatbot/infrastructure/orcutt_chatbot_stack.py` (line ~365)
+
+**Frontend:**
+- Code: `orcutt-chatbot/frontend/src/`
+- Build: `orcutt-chatbot/frontend/build/`
+
+**Infrastructure:**
+- CDK Stack: `orcutt-chatbot/infrastructure/orcutt_chatbot_stack.py`
+- Config: `orcutt-chatbot/config.yaml`
+
+### AWS Resources
+
+**Key Resources:**
+- CloudFront Distribution: https://d3dolln1x7yei7.cloudfront.net
+- API Gateway: https://4rm7hu9b29.execute-api.us-west-2.amazonaws.com/prod/
+- Lambda Function: `OrcuttChatbotStack-dev-ChatbotLambda4595A29D-MISNPrFfoYqr`
+- Knowledge Base: `V3OVONSOBC` (OrcuttSchoolsKB-WebCrawler-v2)
+- DynamoDB Table: `orcutt-conversations-785054116835`
+- S3 Bucket: `orcutt-chatbot-kb-dev-785054116835-us-west-2`
+
+**AWS Account:**
+- Account ID: 785054116835
+- Region: us-west-2
+- SSO Profile: orcutt-ai
+
+### Emergency Contacts
+
+**For technical issues:**
+- Tech Reformers: info@techreformers.com
+- GitHub Issues: https://github.com/Tech-Reformers/orcutt-schools-chatbot-tr/issues
+
+**For AWS support:**
+- AWS Support Console (if you have a support plan)
+- Or contact Tech Reformers for assistance
 
 ## Support
 
