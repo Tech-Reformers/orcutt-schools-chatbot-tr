@@ -296,12 +296,13 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 ## Known Limitations
 
 ### Web Crawler Knowledge Base
-**Current Status (as of 2025-02-07):** The chatbot uses AWS Bedrock's managed web crawler for content ingestion.
+**Current Status (as of 2026-02-07):** The chatbot uses AWS Bedrock's managed web crawler for content ingestion.
 
 **Configuration:**
-- Knowledge Base ID: `V3OVONSOBC`
-- Chunking: Semantic, 500 tokens, buffer 1, breakpoint 95
+- Knowledge Base ID: `PHUCWA33C9` (v3)
+- Chunking: Semantic, 500 tokens, buffer 1 (20% overlap), breakpoint 95
 - Indexed: ~2800 pages from all school subdomains
+- Previous KB: V3OVONSOBC (deprecated)
 
 **Known Issues:**
 1. **Specific Pages Not Retrieved**: Some queries fail to find their target pages even though they're indexed:
@@ -330,7 +331,7 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 **When website content changes, trigger a Knowledge Base sync:**
 
 1. Go to AWS Console → Bedrock → Knowledge Bases
-2. Select Knowledge Base: `OrcuttSchoolsKB-WebCrawler-v2` (ID: V3OVONSOBC)
+2. Select Knowledge Base: `OrcuttSchoolsKB-WebCrawler-v3` (ID: PHUCWA33C9)
 3. Click on the Data Source
 4. Click "Sync" button
 5. Monitor sync progress (typically 2-3 hours for full site)
@@ -434,7 +435,7 @@ git push
 - CloudFront Distribution: https://d3dolln1x7yei7.cloudfront.net
 - API Gateway: https://4rm7hu9b29.execute-api.us-west-2.amazonaws.com/prod/
 - Lambda Function: `OrcuttChatbotStack-dev-ChatbotLambda4595A29D-MISNPrFfoYqr`
-- Knowledge Base: `V3OVONSOBC` (OrcuttSchoolsKB-WebCrawler-v2)
+- Knowledge Base: `PHUCWA33C9` (OrcuttSchoolsKB-WebCrawler-v3)
 - DynamoDB Table: `orcutt-conversations-785054116835`
 - S3 Bucket: `orcutt-chatbot-kb-dev-785054116835-us-west-2`
 

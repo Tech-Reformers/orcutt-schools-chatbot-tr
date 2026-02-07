@@ -2,14 +2,15 @@
 
 - [x] 1. Create new Knowledge Base - Step 1: Provide details
   - Go to AWS Bedrock Console → Knowledge Bases → Create
-  - Knowledge Base name: "OrcuttSchoolsKB-WebCrawler"
+  - Knowledge Base name: "OrcuttSchoolsKB-WebCrawler-v3"
+  - Knowledge Base ID: PHUCWA33C9
   - Knowledge Base description: (optional)
   - Service role: AmazonBedrockExecutionRoleForKnowledgeBase_kwns0 (or auto-create)
   - Knowledge base type: Knowledge base use vector store
   - Data source type: Web Crawler
   - _Requirements: 1.1_
 
-- [ ] 2. Configure data source - Step 2: Configure data source
+- [x] 2. Configure data source - Step 2: Configure data source
   - Data source name: (auto-generated or custom)
   - Source URL: https://www.orcuttschools.net
   - Sync scope: Subdomains (automatically discovers all 12 school subdomains)
@@ -20,7 +21,7 @@
   - Note: ParentSquare PDFs will fail due to robots.txt restrictions (expected)
   - _Requirements: 5.1, 5.2_
 
-- [ ] 3. Configure data storage and processing - Step 3
+- [x] 3. Configure data storage and processing - Step 3
   - Parsing strategy: Amazon Bedrock Default Parser
   - Chunking strategy: Semantic chunking
     - Buffer: 1 (20% overlap)
@@ -33,27 +34,27 @@
     - Type: Amazon OpenSearch Serverless
   - _Requirements: 5.3_
 
-- [ ] 4. Run initial web crawler sync
+- [x] 4. Run initial web crawler sync
   - Start the crawl job
   - Monitor progress in AWS Console
   - Wait for completion (may take 30-60 minutes)
   - Verify content is indexed
   - _Requirements: 1.3_
 
-- [ ] 5. Update Lambda code for web crawler metadata
+- [x] 5. Update Lambda code for web crawler metadata
   - Modify `query_knowledge_base_semantic()` to use startsWith filter on x-amz-bedrock-kb-source-uri
   - Update `process_knowledge_base_response()` to extract source URI from standard metadata
   - Extract domain from source URI for school name mapping
   - Handle missing metadata fields gracefully
   - _Requirements: 4.1, 4.2, 4.3_
 
-- [ ] 6. Update environment variable
+- [x] 6. Update environment variable
   - Get new Knowledge Base ID from AWS Console
-  - Update Lambda environment variable KNOWLEDGE_BASE_ID to new KB
-  - Or update config.yaml if making permanent
+  - Update Lambda environment variable KNOWLEDGE_BASE_ID to PHUCWA33C9
+  - Updated in infrastructure/orcutt_chatbot_stack.py
   - _Requirements: 1.1_
 
-- [ ] 7. Deploy and test basic queries
+- [x] 7. Deploy and test basic queries
   - Deploy Lambda changes
   - Test: "Who is the Superintendent?"
   - Test: "Who are the Executive Directors?"
@@ -61,6 +62,7 @@
   - Test: "pizza"
   - Verify all queries return correct answers
   - _Requirements: 6.1, 6.2, 6.3_
+  - **Status:** Testing in progress with v3 KB (PHUCWA33C9)
 
 - [ ] 8. Test school-specific filtering
   - Select "Pine Grove Elementary" in UI dropdown
@@ -88,11 +90,12 @@
   - Document troubleshooting common issues
   - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
-- [ ] 11. Update README with web crawler information
+- [x] 11. Update README with web crawler information
   - Update README with web crawler setup instructions
   - Document seed URLs and filters used
   - Link to customer management documentation
   - Note that custom webscraper is deprecated
+  - Updated KB ID to PHUCWA33C9 (v3)
   - _Requirements: 7.3_
 
 - [ ] 12. Remove custom webscraper (optional, after validation)
@@ -101,6 +104,7 @@
   - Remove scripts/run_webscraper.sh
   - Update documentation
   - _Requirements: 7.1, 7.2_
+  - **Note:** Keeping for now until v3 KB is fully validated
 
 - [ ] 13. Final validation and comparison
   - Compare answer quality with old KB
@@ -108,3 +112,4 @@
   - Verify no regressions
   - Document any improvements or issues found
   - _Requirements: All_
+  - **Status:** In progress - testing v3 KB with 500 token chunks, buffer 1
