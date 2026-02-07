@@ -59,8 +59,8 @@ None
 **Parsing Strategy:** Amazon Bedrock Default Parser
 
 **Chunking Strategy:** Semantic chunking
-- **Buffer:** 1
-- **Max tokens:** 300
+- **Buffer:** 1 (20% overlap between chunks)
+- **Max tokens:** 500 (larger chunks for better context)
 - **Breakpoint percentile threshold:** 95
 
 **Embeddings Model:** Titan Text Embeddings v2

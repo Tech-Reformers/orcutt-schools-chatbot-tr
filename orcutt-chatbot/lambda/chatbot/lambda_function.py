@@ -760,7 +760,7 @@ Respond with ONLY the category name (greeting, farewell, knowledge_base, knowled
             logging.error(f"Error generating presigned URL: {str(e)}")
             return None
     
-    def generate_response(self, query: str, context: str, query_type: str, conversation_context: str, selected_school: str) -> Tuple[str, float]:
+    def generate_response(self, query: str, context: str, query_type: str, conversation_context: str, selected_school: str) -> Tuple[str, float, List[int]]:
         """Generate response using Claude with conversation context"""
         start_time = time.time()
         
@@ -893,4 +893,4 @@ At the end of your response include a python list of the sources used, you will 
                 
         except Exception as e:
             logging.error(f"Error generating response: {str(e)}")
-            return "I'm sorry, I encountered an error while processing your request. Please try again or contact the school directly for assistance.", 0
+            return "I'm sorry, I encountered an error while processing your request. Please try again or contact the school directly for assistance.", 0, []

@@ -23,8 +23,8 @@
 - [ ] 3. Configure data storage and processing - Step 3
   - Parsing strategy: Amazon Bedrock Default Parser
   - Chunking strategy: Semantic chunking
-    - Buffer: 1
-    - Max tokens: 300
+    - Buffer: 1 (20% overlap)
+    - Max tokens: 500 (larger chunks for better context)
     - Breakpoint percentile threshold: 95
   - Embeddings model: Titan Text Embeddings v2
     - Embedding type: Float vector embeddings
