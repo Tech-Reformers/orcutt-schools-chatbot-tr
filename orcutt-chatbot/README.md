@@ -55,6 +55,32 @@ Thanks for your interest in this solution. Having specific examples of replicati
 
 An AI-powered chatbot built for Orcutt Schools to help students, parents, and staff get information about school programs, schedules, and policies.
 
+## Current Status (February 2026)
+
+**Production URL:** https://d3dolln1x7yei7.cloudfront.net
+
+**Knowledge Base Configuration:**
+- KB ID: GCERPWLGOK
+- Data Source: AWS Bedrock Web Crawler
+- Indexed Pages: 2,806 website pages
+- Scope: www.orcuttschools.net and all subdomains
+- Chunking: Semantic (buffer 1, max tokens 300, breakpoint 95%)
+- Embeddings: Titan Text Embeddings v2
+- Retrieval: 40 chunks, default search type (hybrid)
+
+**Recent Fixes (Feb 2026):**
+- Fixed Knowledge Base ID reference (was pointing to old KB)
+- Removed domain filter that was blocking content
+- Optimized retrieval to 40 chunks (matches Bedrock console test)
+- Removed unnecessary reranking logic
+- Removed S3 PDF data source (web crawler is sufficient)
+
+**Verified Working Queries:**
+- "Who is the superintendent?"
+- "Who are the executive directors?"
+- "How do I order pizza for a classroom celebration?"
+- School-specific queries using the school selector dropdown
+
 ## Architecture
 
 The solution consists of several key components:

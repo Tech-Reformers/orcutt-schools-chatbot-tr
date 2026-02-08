@@ -362,7 +362,7 @@ class OrcuttChatbotStack(Stack):
             memory_size=self.config.CHATBOT_MEMORY,
             environment={
                 "DYNAMODB_TABLE": conversation_table.table_name,
-                "KNOWLEDGE_BASE_ID": "PHUCWA33C9"  # Web crawler KB v3 - 500 tokens, buffer 1, correct URL
+                "KNOWLEDGE_BASE_ID": "GCERPWLGOK"  # Web crawler KB - 2806 files indexed
             }
         )
 

@@ -241,12 +241,13 @@ class OrcuttChatbot:
                     kb_response_main_domain = self.query_knowledge_base_semantic(
                         message, 
                         knowledge_base_id, 
-                        domain_filter="orcuttschools.net", 
-                        number_of_results=60
+                        domain_filter=None,  # No filter - search all content
+                        number_of_results=40  # Matches Bedrock console test setting
                     )
                     
                     # Rerank sources to prioritize website content
-                    kb_response_main_domain = self.rerank_kb_response(kb_response_main_domain, message)
+                    # DISABLED: Reranking was interfering with retrieval order
+                    # kb_response_main_domain = self.rerank_kb_response(kb_response_main_domain, message)
                     if kb_response_school_specific:
                         kb_response_school_specific = self.rerank_kb_response(kb_response_school_specific, message)
                     
@@ -525,15 +526,15 @@ Respond with ONLY the category name (greeting, farewell, knowledge_base, knowled
             logging.error(f"Error applying Bedrock Guardrails: {str(e)}")
             return True
     
-    def query_knowledge_base_semantic(self, query: str, knowledge_base_id: str, domain_filter: str = None, number_of_results: int = 60) -> Dict:
+    def query_knowledge_base_semantic(self, query: str, knowledge_base_id: str, domain_filter: str = None, number_of_results: int = 60, exclude_pdfs: bool = False) -> Dict:
         """Query Knowledge Base using hybrid search with optional domain filtering"""
         logger.info(f"domain_filter: {domain_filter}")
         logger.info(f"Retrieval query: {query}")
         try:
             config = {
                 'vectorSearchConfiguration': {
-                    'numberOfResults': number_of_results,
-                    'overrideSearchType': 'HYBRID'
+                    'numberOfResults': number_of_results
+                    # Using default search type (auto-selects hybrid or semantic)
                 }
             }
             
@@ -543,6 +544,14 @@ Respond with ONLY the category name (greeting, farewell, knowledge_base, knowled
                     'startsWith': {
                         'key': 'x-amz-bedrock-kb-source-uri',
                         'value': f'https://{domain_filter}'
+                    }
+                }
+            # Exclude PDFs if requested (prioritize website content)
+            elif exclude_pdfs:
+                config['vectorSearchConfiguration']['filter'] = {
+                    'notContains': {
+                        'key': 'x-amz-bedrock-kb-source-uri',
+                        'value': '.pdf'
                     }
                 }
             
@@ -558,19 +567,16 @@ Respond with ONLY the category name (greeting, farewell, knowledge_base, knowled
             return {}
     
     def is_website_source(self, result: Dict) -> bool:
-        """Determine if a source is a website page (not a PDF)"""
+        """Determine if a source is a website page (not a PDF document)"""
         try:
-            # Check source URL in metadata
-            source_url = result.get('metadata', {}).get('source', '').lower()
-            if source_url.endswith('.pdf'):
+            # Check the source URI - web crawler uses x-amz-bedrock-kb-source-uri
+            source_uri = result.get('metadata', {}).get('x-amz-bedrock-kb-source-uri', '').lower()
+            
+            # If URL contains .pdf, it's a PDF document
+            if '.pdf' in source_uri:
                 return False
             
-            # Check S3 URI
-            s3_uri = result.get('location', {}).get('s3Location', {}).get('uri', '').lower()
-            if '.pdf' in s3_uri:
-                return False
-            
-            # If neither indicates PDF, treat as website
+            # Otherwise it's a website page (HTML)
             return True
             
         except Exception as e:
@@ -657,9 +663,9 @@ Respond with ONLY the category name (greeting, farewell, knowledge_base, knowled
         return any(keyword in query_lower for keyword in date_keywords)
     
     def rerank_sources(self, results: List[Dict], query: str) -> List[Dict]:
-        """Rerank sources to prioritize website content over PDFs"""
+        """Rerank sources to prioritize website content over PDF documents"""
         try:
-            # Separate website and PDF sources
+            # Separate website pages and PDF documents
             website_sources = []
             pdf_sources = []
             
