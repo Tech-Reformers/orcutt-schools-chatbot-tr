@@ -11,6 +11,7 @@ from aws_cdk import (
     aws_cloudfront as cloudfront,
     aws_cloudfront_origins as origins,
     aws_s3_deployment as s3deploy,
+    aws_certificatemanager as acm,
     custom_resources as cr,
     RemovalPolicy,
     Duration,
@@ -421,6 +422,12 @@ class OrcuttChatbotStack(Stack):
                 )
             )
         
+        # Import certificate for custom domain
+        certificate = acm.Certificate.from_certificate_arn(
+            self, "CustomDomainCertificate",
+            certificate_arn="arn:aws:acm:us-east-1:785054116835:certificate/5308ce8e-6511-43a1-be6d-e749f6bf6bad"
+        )
+        
         distribution = cloudfront.Distribution(
             self, "FrontendDistribution",
             default_behavior=cloudfront.BehaviorOptions(
@@ -428,7 +435,9 @@ class OrcuttChatbotStack(Stack):
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS
             ),
             default_root_object=self.config.CLOUDFRONT_DEFAULT_ROOT_OBJECT,
-            error_responses=error_responses
+            error_responses=error_responses,
+            domain_names=["orcutt-ai.techreformers.com"],
+            certificate=certificate
         )
 
         # Deploy React build to S3 (build folder must exist)
