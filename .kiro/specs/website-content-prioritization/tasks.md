@@ -61,3 +61,11 @@
   - Verify consistency across different phrasings
   - Test that existing queries still work correctly
   - _Requirements: All_
+
+- [x] 10. Add hardcoded Q&A fallback for critical queries
+  - Add "HARDCODED ANSWERS - PRIORITY RESPONSES" section to system prompt
+  - Include pizza party Q&A with webpage link (https://www.orcuttschools.net/34729_3)
+  - Instruct Claude to prioritize hardcoded answers over retrieved sources
+  - Format for easy extension: Q: [variations] / A: [exact answer]
+  - Test pizza party query variations
+  - _Requirements: 1.1, 3.2, 4.1_

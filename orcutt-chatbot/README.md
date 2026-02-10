@@ -116,7 +116,7 @@ Additionally other AWS services are used for additional functionality
 - Node.js 18+ (for frontend) - Note: Node 23 is end-of-life; versions 20, 22, or 24 are recommended
 - Python 3.13+ (for CDK and Lambda functions)
 - AWS CDK CLI installed (`npm install -g aws-cdk`)
-- Request model access for the required models through AWS console in Bedrock (Amazon Titan Text V2, Claude Sonnet 3.5 V2 & Amazon Nova Lite)
+- Request model access for the required models through AWS console in Bedrock (Amazon Titan Text V2, Claude 3.5 Sonnet V2 & Amazon Nova Lite)
 - Docker Desktop (must be running before deployment)
 
 
@@ -317,7 +317,7 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 - Date-related queries focus on upcoming events rather than past dates
 - Simplified architecture - no complex query preprocessing needed
 
-**Note:** Attempted upgrade to Claude Sonnet 4.5 but reverted due to AWS Service Control Policy restrictions (Commits: 3ed78d4, d54bc7b, 83e328b). Currently using Claude 3.5 Sonnet V2.
+**Note:** Currently using Claude 3.5 Sonnet V2. Claude 3.7 requires inference profiles which are not yet configured.
 
 ## Known Limitations
 

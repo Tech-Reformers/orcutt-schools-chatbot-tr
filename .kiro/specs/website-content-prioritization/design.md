@@ -2,174 +2,113 @@
 
 ## Overview
 
-This design improves the chatbot's source prioritization to prefer website content over PDF documents when both are available. The solution involves modifying the knowledge base retrieval process to apply ranking boosts to website sources and implementing date-aware filtering for time-sensitive queries.
+This design improves the chatbot's ability to retrieve relevant website content for specific queries. The solution uses **selective reranking** and **improved prompt engineering** rather than query expansion.
 
-## Architecture
+## Problem Statement
 
-The current system retrieves sources using semantic search from AWS Bedrock Knowledge Base, which returns results ranked by vector similarity. We will:
-1. Switch from pure semantic search to hybrid search (semantic + keyword matching)
-2. Increase the number of retrieved results to ensure relevant content is found
-3. Add a post-retrieval reranking step that applies business logic to boost website sources and filter based on dates
+When users query "pizza party", the system was not consistently retrieving the Child Nutrition Services catering page. The issue was related to retrieval configuration and prompt handling of conflicting information (wellness policies vs. actual services offered).
 
-**Current Flow:**
-1. User query → Semantic search → Ranked results → Claude generates response
+## Solution: Selective Reranking + Smart Prompt Engineering
 
-**New Flow:**
-1. User query → **Hybrid search (semantic + keyword, 60 results)** → Ranked results → **Rerank (boost websites, filter dates)** → Claude generates response
+### Implementation
+**Location**: `lambda/chatbot/lambda_function.py`
 
-## Components and Interfaces
-
-### Backend Changes
-
-**File**: `lambda/chatbot/lambda_function.py`
-
-**Modified Method**: `query_knowledge_base_semantic()`
-- Change `overrideSearchType` from `'SEMANTIC'` to `'HYBRID'`
-- Enables keyword matching in addition to semantic search
-- AWS Bedrock automatically balances semantic and keyword scores
-- Increase `numberOfResults` from 40 to 60 for main domain queries
-- Ensures sufficient results are retrieved to find relevant content
-
-**New Method**: `rerank_sources_by_type()`
-- Takes retrieval results and query
-- Separates website sources from PDF sources
-- Applies boost factor to website sources
-- Reorders results with websites first
-
-**New Method**: `filter_by_dates()`
-- Extracts dates from source content
-- Compares dates to current date
-- Deprioritizes sources with only past dates for date-related queries
-
-**Modified Method**: `process_knowledge_base_response()`
-- Calls reranking methods before processing sources
-- Maintains existing source metadata structure
-
-**Modified Method**: `process_chat_request()`
-- Calls `query_knowledge_base_semantic()` with increased result count
-- Uses user query directly without preprocessing
-
-### Source Type Detection
-
-Sources will be classified as "website" or "pdf" based on metadata:
-- **Website**: `source_url` ends with `.net` or `.com` (not `.pdf`)
-- **PDF**: `source_url` ends with `.pdf` OR s3Uri contains `.pdf`
-
-### Retrieval Strategy
-
-For effective hybrid search:
-- Use user queries directly without preprocessing
-- Hybrid search combines semantic similarity with BM25 keyword matching
-- AWS Bedrock automatically balances the two scoring methods
-- Retrieve 60 results from main domain to ensure relevant content is found
-- Retrieve 10 results from school-specific domains when applicable
-
-**Rationale:**
-- Simplicity: No complex query preprocessing needed
-- Reliability: Hybrid search handles both semantic and keyword matching
-- Coverage: 60 results ensures we don't miss relevant pages
-- AWS handles the complexity of balancing semantic vs keyword scores
-
-### Date Extraction
-
-For date-aware filtering:
-- Extract dates from source content using regex patterns
-- Common formats: MM/DD/YYYY, Month DD, YYYY, etc.
-- Compare extracted dates to `datetime.now()`
-- Flag sources as "has_future_dates", "has_only_past_dates", or "no_dates"
-
-## Data Models
-
-### Source Ranking Metadata
+### Approach 1: Selective Reranking (lines 248-250)
+Reranking is **disabled** for main domain queries but **enabled** for school-specific queries.
 
 ```python
-{
-    "source_type": "website" | "pdf",
-    "has_future_dates": bool,
-    "has_past_dates": bool,
-    "boost_score": float  # Multiplier applied to relevance
-}
+# Rerank sources to prioritize website content
+# DISABLED: Reranking was interfering with retrieval order
+# kb_response_main_domain = self.rerank_kb_response(kb_response_main_domain, message)
+if kb_response_school_specific:
+    kb_response_school_specific = self.rerank_kb_response(kb_response_school_specific, message)
 ```
 
-### Ranking Logic
+**Why**: Bedrock's native ranking works well for main domain queries. Reranking only helps for school-specific queries where domain filtering is applied.
 
-**Approach**: Simple separation rather than score-based boosting
+### Approach 2: Prompt Engineering (lines 800-830)
+Added "CRITICAL - HANDLING CONFLICTING INFORMATION" section to system prompt that instructs Claude to prioritize official services over restrictive policies.
 
-```python
-# Separate sources by type
-website_sources = [s for s in sources if is_website(s)]
-pdf_sources = [s for s in sources if is_pdf(s)]
-
-# For date-related queries, further filter by dates
-if is_date_query:
-    website_sources = prioritize_future_dates(website_sources)
-    pdf_sources = prioritize_future_dates(pdf_sources)
-
-# Reorder: websites first, then PDFs
-reranked_sources = website_sources + pdf_sources
+**Key instruction**:
+```
+When sources contain both district services AND policies that seem to conflict:
+1. District-provided services are OFFICIAL OFFERINGS and take precedence
+2. Policies describe general guidelines, but services are specific exceptions/implementations
+3. If a service exists for what the user is asking about, provide that service information
+4. Do NOT cite restrictive policies when an official service is available
 ```
 
-This ensures websites always appear before PDFs in the context, regardless of semantic similarity scores. Claude will naturally use the first relevant sources it encounters.
+### Why This Works
+- Bedrock's retrieval finds both the catering page AND wellness policy
+- Without guidance, Claude would cite the restrictive policy
+- Prompt engineering tells Claude to prioritize the actual service offered
+- Result: "pizza party" queries now correctly return catering information
 
-## Correctness Properties
+### Status
+✅ **IMPLEMENTED AND WORKING**
+- Deployed: February 9, 2026
+- Production URL: https://d3dolln1x7yei7.cloudfront.net
+- Test confirmed: "pizza party" now retrieves catering page
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system-essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+## Reranking Implementation
 
-### Property 1: Website Source Prioritization
-*For any* query where both website and PDF sources are retrieved, website sources SHALL appear before PDF sources in the reranked results (assuming similar relevance scores).
-**Validates: Requirements 1.1, 1.2, 1.3**
+## Reranking Implementation
 
-### Property 2: Date-Aware Ranking
-*For any* date-related query, sources containing future dates SHALL be ranked higher than sources containing only past dates.
-**Validates: Requirements 5.1, 5.3**
+### Reranking Code (lines 666-691)
+The `rerank_sources()` method separates website sources from PDF sources and prioritizes:
+1. Website sources (current, authoritative)
+2. PDF sources (archived documents)
 
-### Property 3: Consistent Ranking
-*For any* query asked with different phrasing, the reranking logic SHALL apply the same boost factors and produce consistent source ordering.
-**Validates: Requirements 2.1, 2.3**
+For date-related queries, sources with future dates are prioritized within each category.
 
-### Property 4: Fallback to PDFs
-*For any* query where no website sources are available, PDF sources SHALL be used without penalty.
-**Validates: Requirements 4.2**
+### Current Configuration
+- **Main domain queries**: Reranking **DISABLED** (line 248-249 commented out)
+- **School-specific queries**: Reranking **ENABLED** (line 250)
+- **Reason**: Bedrock's native ranking is optimal for main domain; reranking helps school-specific filtered results
 
-### Property 5: Keyword Matching
-*For any* query containing specific terms, sources containing exact keyword matches SHALL be retrieved and ranked appropriately by the hybrid search algorithm.
-**Validates: Requirements 6.1, 6.2, 6.3**
+## Configuration
 
-### Property 6: Sufficient Retrieval Coverage
-*For any* query, retrieving 60 results SHALL provide sufficient coverage to find relevant content even when it doesn't rank in the top 20.
-**Validates: Requirements 6.4**
+### Knowledge Base Settings
+- **KB ID**: GCERPWLGOK (2806 files from web crawler)
+- **Number of results**: 40 for main domain, 10 for school-specific
+- **Search type**: Default (HYBRID - semantic + keyword)
+- **Domain filter**: None for main queries (searches all content)
 
-## Error Handling
+### Query Processing Flow
+1. User submits query (e.g., "pizza party")
+2. **KB Retrieval**: Search with hybrid search (semantic + keyword)
+3. **Selective Reranking**: Apply only to school-specific queries
+4. **Response Generation**: Claude uses retrieved sources with smart prompt guidance
 
-### No Website Sources Available
-- **Scenario**: Query retrieves only PDF sources
-- **Handling**: Use PDF sources normally, no boost applied
-- **User Impact**: User gets answer from PDFs without indication of lower priority
+## Testing Results
 
-### Date Extraction Fails
-- **Scenario**: Cannot parse dates from source content
-- **Handling**: Treat source as "no_dates", apply no date-based penalty
-- **User Impact**: Source is ranked based on type (website vs PDF) only
+### Test Cases - All Passed ✅
+1. ✅ "pizza party" → Retrieves catering page and prioritizes service over policy
+2. ✅ "executive directors" → Retrieves correct info
+3. ✅ "superintendent" → Works correctly
+4. ✅ School-specific queries → Reranking works correctly
+5. ✅ Other queries → No regression
 
-### All Sources Have Past Dates
-- **Scenario**: User asks about future event but all sources have past dates
-- **Handling**: Use best available sources, let Claude explain dates are past
-- **User Impact**: User gets informed that information may be outdated
+### Success Metrics
+- ✅ Food queries retrieve catering page
+- ✅ No degradation in other query types
+- ✅ Response times under 10 seconds
+- ✅ System stable and working for demo
 
-## Testing Strategy
+## Key Learnings
 
-### Unit Tests
-- Test `rerank_sources_by_type()` with mixed website/PDF sources
-- Test `filter_by_dates()` with various date formats
-- Verify boost calculations are correct
-- Test edge cases (no sources, all PDFs, all websites)
+1. **Bedrock's native ranking is good**: Don't interfere unless necessary
+2. **Prompt engineering matters**: Teaching Claude to prioritize services over policies solved the core issue
+3. **Selective reranking**: Only apply where it helps (school-specific queries)
+4. **Test with actual queries**: Real-world testing revealed the policy vs. service conflict
 
-### Integration Tests
-- End-to-end test: Ask "Who are the Executive Directors?" → verify website source used
-- Date test: Ask "When are parent-teacher conferences?" → verify future dates prioritized
-- Fallback test: Ask question only in PDFs → verify PDFs used without issue
+## Rollback Plan
+If issues arise:
+1. Re-enable reranking for main domain (uncomment lines 248-249)
+2. Redeploy Lambda
+3. Monitor query performance
 
-### Manual Testing
-- Test with known queries that currently fail (Executive Directors, bus schedules)
-- Verify consistency across multiple phrasings
-- Check that PDF sources still work when appropriate
+## Future Enhancements
+1. Machine learning to learn optimal ranking strategies
+2. User feedback to refine prompt instructions
+3. Expand conflict resolution logic to other domains

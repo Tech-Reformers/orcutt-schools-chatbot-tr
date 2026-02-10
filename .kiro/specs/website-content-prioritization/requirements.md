@@ -75,3 +75,14 @@ This spec addresses a critical accuracy issue where the chatbot retrieves and us
 2. WHEN a source contains exact keyword matches for the query THEN the system SHALL rank that source higher than sources with only semantic similarity
 3. WHEN the system performs knowledge base retrieval THEN the system SHALL use hybrid search combining semantic similarity and keyword matching
 4. WHEN the system retrieves sources THEN the system SHALL retrieve a sufficient number of results (60) to ensure relevant content is found
+
+### Requirement 7
+
+**User Story:** As a user asking critical questions that need guaranteed correct answers, I want the system to provide accurate information even when retrieval fails, so that I always get the help I need.
+
+#### Acceptance Criteria
+
+1. WHEN a user asks a question that matches a hardcoded Q&A pair THEN the system SHALL return the hardcoded answer
+2. WHEN a hardcoded answer exists for a query THEN the system SHALL prioritize it over retrieved sources
+3. WHEN the system provides a hardcoded answer THEN the system SHALL include relevant webpage links and contact information
+4. WHEN new critical queries are identified THEN the system SHALL support adding them to the hardcoded Q&A list without code changes to the core logic
