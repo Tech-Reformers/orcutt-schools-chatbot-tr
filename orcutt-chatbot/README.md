@@ -417,6 +417,54 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 2. Filter by service: Bedrock, Lambda, CloudFront
 3. Set up billing alerts if needed
 
+### Conversation History and Analytics
+
+**DynamoDB stores all chatbot conversations** for analytics and quality monitoring.
+
+**Table Name:** `orcutt-conversations-785054116835`
+
+**What's Stored:**
+- Every user message and chatbot response
+- Session IDs (tracks individual conversations)
+- Timestamps
+- Query types (greeting, farewell, knowledge_base)
+- Response times
+- Sources used for each response
+- User feedback (if thumbs up/down feature is enabled)
+
+**How to Use This Data:**
+
+1. **View Conversations:**
+   - AWS Console → DynamoDB → Tables → `orcutt-conversations-785054116835`
+   - Click "Explore table items" to browse conversations
+   - Search by session_id to see full conversation threads
+
+2. **Analytics and Insights:**
+   - Identify most common questions users ask
+   - Find topics that need better content on the website
+   - Track usage patterns (peak times, popular queries)
+   - Monitor response times and performance
+
+3. **Quality Monitoring:**
+   - Review conversations to find incorrect answers
+   - Identify queries that need better responses
+   - See which sources are being used most frequently
+   - Find gaps in the Knowledge Base content
+
+4. **Export Data for Analysis:**
+   - AWS Console → DynamoDB → Tables → Export to S3
+   - Export to CSV/JSON for spreadsheet analysis
+   - Use for monthly reports or trend analysis
+
+5. **Debugging User Issues:**
+   - When users report problems, look up their session_id
+   - See exactly what they asked and what the chatbot responded
+   - Check response times and error types
+
+**Cost:** DynamoDB charges per read/write operation, but typically costs less than $5/month for this use case.
+
+**Data Retention:** Conversations are stored indefinitely unless manually deleted. Consider setting up a lifecycle policy if you want to automatically delete old conversations after a certain period.
+
 ### Troubleshooting
 
 **Chatbot not responding:**
