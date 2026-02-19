@@ -62,7 +62,7 @@ An AI-powered chatbot built for Orcutt Schools to help students, parents, and st
 - https://d3dolln1x7yei7.cloudfront.net (CloudFront URL)
 
 **Knowledge Base Configuration:**
-- KB ID: GCERPWLGOK
+- KB ID: `<KB_ID>`
 - Data Source: AWS Bedrock Web Crawler (managed service)
 - Indexed Pages: 2,806 website pages
 - Scope: www.orcuttschools.net and all subdomains
@@ -214,7 +214,7 @@ Additionally other AWS services are used for additional functionality
 When website content changes, trigger a Knowledge Base sync:
 
 1. Go to AWS Console → Bedrock → Knowledge Bases
-2. Select Knowledge Base: `OrcuttSchoolsKB` (ID: GCERPWLGOK)
+2. Select Knowledge Base: `OrcuttSchoolsKB` (ID: `<KB_ID>`)
 3. Click on the Data Source (Web Crawler)
 4. Click "Sync" button
 5. Monitor sync progress (typically 2-3 hours for full site)
@@ -355,7 +355,7 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 **Current Status (as of 2026-02-10):** The chatbot uses AWS Bedrock's managed web crawler for content ingestion.
 
 **Configuration:**
-- Knowledge Base ID: `GCERPWLGOK`
+- Knowledge Base ID: `<KB_ID>`
 - Chunking: Semantic, 300 tokens, buffer 1 (20% overlap), breakpoint 95%
 - Indexed: ~2,806 pages from all school subdomains
 - Data Source: AWS Bedrock Web Crawler (managed service)
@@ -386,7 +386,7 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 **When website content changes, trigger a Knowledge Base sync:**
 
 1. Go to AWS Console → Bedrock → Knowledge Bases
-2. Select Knowledge Base: `OrcuttSchoolsKB` (ID: GCERPWLGOK)
+2. Select Knowledge Base: `OrcuttSchoolsKB` (ID: `<KB_ID>`)
 3. Click on the Data Source (Web Crawler)
 4. Click "Sync" button
 5. Monitor sync progress (typically 2-3 hours for full site)
