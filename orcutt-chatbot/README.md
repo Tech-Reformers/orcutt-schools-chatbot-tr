@@ -421,7 +421,7 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 
 **DynamoDB stores all chatbot conversations** for analytics and quality monitoring.
 
-**Table Name:** `orcutt-conversations-785054116835`
+**Table Name:** `orcutt-conversations-<ACCOUNT_ID>`
 
 **What's Stored:**
 - Every user message and chatbot response
@@ -435,7 +435,7 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 **How to Use This Data:**
 
 1. **View Conversations:**
-   - AWS Console → DynamoDB → Tables → `orcutt-conversations-785054116835`
+   - AWS Console → DynamoDB → Tables → `orcutt-conversations-<ACCOUNT_ID>`
    - Click "Explore table items" to browse conversations
    - Search by session_id to see full conversation threads
 
@@ -486,7 +486,7 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 
 **Prerequisites:**
 - Git installed
-- AWS CLI configured with SSO profile `orcutt-ai`
+- AWS CLI configured with SSO profile
 - Python 3.13+ with virtual environment
 - Node.js 20+ (for CDK)
 - Docker Desktop running
@@ -501,15 +501,15 @@ cd orcutt-schools-chatbot-tr/orcutt-chatbot
 source venv/bin/activate
 
 # 3. Login to AWS
-aws sso login --profile orcutt-ai
+aws sso login --profile <your-profile-name>
 
 # 4. Make your code changes
 # Edit files in lambda/chatbot/ or infrastructure/
 
 # 5. Deploy changes
-export CDK_DEFAULT_ACCOUNT=785054116835
+export CDK_DEFAULT_ACCOUNT=<YOUR_AWS_ACCOUNT_ID>
 export CDK_DEFAULT_REGION=us-west-2
-cdk deploy --profile orcutt-ai --require-approval never
+cdk deploy --profile <your-profile-name> --require-approval never
 
 # 6. Test changes
 # Visit https://orcutt-ai.techreformers.com
@@ -539,16 +539,16 @@ git push
 **Key Resources:**
 - Custom Domain: https://orcutt-ai.techreformers.com
 - CloudFront Distribution: https://d3dolln1x7yei7.cloudfront.net
-- API Gateway: https://4rm7hu9b29.execute-api.us-west-2.amazonaws.com/prod/
-- Lambda Function: `OrcuttChatbotStack-dev-ChatbotLambda4595A29D-MISNPrFfoYqr`
-- Knowledge Base: `GCERPWLGOK` (OrcuttSchoolsKB with Web Crawler)
-- DynamoDB Table: `orcutt-conversations-785054116835`
-- S3 Bucket: `orcutt-chatbot-kb-dev-785054116835-us-west-2`
+- API Gateway: `https://<API_ID>.execute-api.us-west-2.amazonaws.com/prod/`
+- Lambda Function: `OrcuttChatbotStack-dev-ChatbotLambda<UNIQUE_ID>`
+- Knowledge Base: `<KB_ID>` (OrcuttSchoolsKB with Web Crawler)
+- DynamoDB Table: `orcutt-conversations-<ACCOUNT_ID>`
+- S3 Bucket: `orcutt-chatbot-kb-dev-<ACCOUNT_ID>-us-west-2`
 
 **AWS Account:**
-- Account ID: 785054116835
+- Account ID: `<YOUR_AWS_ACCOUNT_ID>`
 - Region: us-west-2
-- SSO Profile: orcutt-ai
+- SSO Profile: `<your-profile-name>`
 
 ### Emergency Contacts
 
