@@ -57,11 +57,13 @@ An AI-powered chatbot built for Orcutt Schools to help students, parents, and st
 
 ## Current Status (February 2026)
 
-**Production URL:** https://d3dolln1x7yei7.cloudfront.net
+**Production URLs:** 
+- https://orcutt-ai.techreformers.com (custom domain)
+- https://d3dolln1x7yei7.cloudfront.net (CloudFront URL)
 
 **Knowledge Base Configuration:**
 - KB ID: GCERPWLGOK
-- Data Source: AWS Bedrock Web Crawler
+- Data Source: AWS Bedrock Web Crawler (managed service)
 - Indexed Pages: 2,806 website pages
 - Scope: www.orcuttschools.net and all subdomains
 - Chunking: Semantic (buffer 1, max tokens 300, breakpoint 95%)
@@ -73,7 +75,8 @@ An AI-powered chatbot built for Orcutt Schools to help students, parents, and st
 - Removed domain filter that was blocking content
 - Optimized retrieval to 40 chunks (matches Bedrock console test)
 - Removed unnecessary reranking logic
-- Removed S3 PDF data source (web crawler is sufficient)
+- Migrated from custom web scraper to AWS Bedrock managed web crawler
+- Improved conversational tone (removed robotic phrases like "Based on the provided context")
 
 **Verified Working Queries:**
 - "Who is the superintendent?"
@@ -202,25 +205,30 @@ Additionally other AWS services are used for additional functionality
   
   **Note:** The deployment process takes 10-15 minutes, primarily due to OpenSearch domain provisioning.
 
-## Webscraping
+## Knowledge Base Management
 
-**Important:** After initial deployment, you must run the webscraper to populate the knowledge base with content. Without this step, the chatbot will not have any information to answer questions.
+**The chatbot uses AWS Bedrock's managed web crawler** - no manual scraping required.
 
-To run the webscraping functionality:
+### Updating Content
 
-  ```bash
-  ./scripts/run_webscraper.sh
-  ```
+When website content changes, trigger a Knowledge Base sync:
 
-This script executes the webscraping lambda function, which performs the following operations:
+1. Go to AWS Console → Bedrock → Knowledge Bases
+2. Select Knowledge Base: `OrcuttSchoolsKB` (ID: GCERPWLGOK)
+3. Click on the Data Source (Web Crawler)
+4. Click "Sync" button
+5. Monitor sync progress (typically 2-3 hours for full site)
 
-1. Web Scraping: Scrapes content from all configured websites
-2. Metadata Generation: Creates metadata files for the scraped content
-3. Data Processing: Adds metadata to the scraped content
-4. S3 Upload: Uploads the processed content and metadata to the S3 bucket
-5. Knowledge Base Sync: Synchronizes the knowledge base with the newly added content
+**Sync frequency recommendations:**
+- After major website updates: Immediately
+- Routine updates: Weekly or bi-weekly
+- Before important events: Day before
 
-The entire pipeline runs automatically once the script is executed. The ingestion process typically takes 2-5 minutes to complete after the script finishes.
+**What gets indexed:**
+- All pages on www.orcuttschools.net
+- All school subdomain pages (e.g., aliceshaw.orcuttschools.net)
+- Respects robots.txt rules
+- Automatically chunks content for optimal retrieval
 
 ## Troubleshooting
 
@@ -262,7 +270,29 @@ aws sso login --profile <profile-name>
 
 This fork includes the following enhancements to improve chatbot accuracy and response quality:
 
-### 1. Enhanced Source Prioritization (Commit: ab41080)
+### 1. Migration to AWS Bedrock Web Crawler (Completed: 2026-02-09)
+**Problem:** Custom web scraper required manual maintenance and didn't integrate well with AWS Bedrock Knowledge Bases.
+
+**Solution:** 
+- Migrated from custom Lambda-based web scraper to AWS Bedrock's managed web crawler
+- Configured web crawler to index www.orcuttschools.net and all school subdomains
+- Indexed 2,806 pages automatically with semantic chunking
+- Sources now point directly to website URLs instead of S3 files
+
+**Impact:** 
+- Simplified architecture - no custom scraper code to maintain
+- IT team can manage updates through AWS Bedrock console
+- Automatic re-crawling on schedule or manual trigger
+- Better integration with Knowledge Base retrieval
+
+### 2. Improved Conversational Tone (Completed: 2026-02-10)
+**Problem:** Chatbot responses started with robotic phrases like "Based on the provided context" and "According to the district website".
+
+**Solution:** Updated system prompt with explicit instructions to avoid robotic intros and provided examples of natural vs. robotic responses.
+
+**Impact:** Responses now sound like a helpful staff member rather than a robot, improving user experience.
+
+### 3. Enhanced Source Prioritization (Commit: ab41080)
 **Problem:** Chatbot was giving outdated answers from old board minutes PDFs instead of current website content.
 
 **Solution:** Updated the system prompt to explicitly prioritize website sources over PDF documents:
@@ -272,14 +302,14 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 
 **Impact:** Chatbot now provides more current, accurate information from the district website.
 
-### 2. Increased Knowledge Base Retrieval Results (Commit: b01de48)
+### 4. Increased Knowledge Base Retrieval Results (Commit: b01de48)
 **Problem:** Relevant information wasn't being retrieved because the result set was too small.
 
 **Solution:** Increased main domain query results from 20 to 40.
 
 **Impact:** More comprehensive context for the chatbot to work with, improving answer accuracy.
 
-### 3. Few-Shot Examples for Conflicting Information (Commit: 2297f04)
+### 5. Few-Shot Examples for Conflicting Information (Commit: 2297f04)
 **Problem:** When sources contained both district services AND restrictive policies, the chatbot would cite the policy instead of the service (e.g., saying "no food allowed" instead of explaining the pizza catering service).
 
 **Solution:** Added few-shot examples directly in the prompt showing Claude how to handle conflicts:
@@ -289,7 +319,7 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 
 **Impact:** Chatbot now correctly identifies and prioritizes district services over restrictive policies. This approach is extensible - new examples can be added as edge cases are discovered.
 
-### 4. Source Display Improvement (Completed: 2025-12-16)
+### 6. Source Display Improvement (Completed: 2025-12-16)
 **Problem:** Sources showed broken S3 presigned URLs instead of original website URLs, resulting in "Access Denied" errors when users clicked on sources.
 
 **Solution:** 
@@ -299,7 +329,7 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 
 **Impact:** Users can now click on sources and be taken directly to the original website pages. No more broken S3 links.
 
-### 5. Website Content Prioritization (Completed: 2025-12-19)
+### 7. Website Content Prioritization (Completed: 2025-12-19)
 **Problem:** Chatbot was retrieving and using outdated information from PDF documents instead of current website content, leading to inaccurate answers.
 
 **Solution:**
@@ -322,29 +352,28 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 ## Known Limitations
 
 ### Web Crawler Knowledge Base
-**Current Status (as of 2026-02-07):** The chatbot uses AWS Bedrock's managed web crawler for content ingestion.
+**Current Status (as of 2026-02-10):** The chatbot uses AWS Bedrock's managed web crawler for content ingestion.
 
 **Configuration:**
-- Knowledge Base ID: `PHUCWA33C9` (v3)
-- Chunking: Semantic, 500 tokens, buffer 1 (20% overlap), breakpoint 95
-- Indexed: ~2800 pages from all school subdomains
-- Previous KB: V3OVONSOBC (deprecated)
+- Knowledge Base ID: `GCERPWLGOK`
+- Chunking: Semantic, 300 tokens, buffer 1 (20% overlap), breakpoint 95%
+- Indexed: ~2,806 pages from all school subdomains
+- Data Source: AWS Bedrock Web Crawler (managed service)
 
 **Known Issues:**
-1. **Specific Pages Not Retrieved**: Some queries fail to find their target pages even though they're indexed:
-   - "Who are the Executive Directors?" - doesn't find http://orcuttschools.net/33975_3
-   - "How do I sign up for a classroom pizza party?" - doesn't find https://www.orcuttschools.net/34729_3
-   - Root cause: Likely JavaScript-rendered content or unusual page structure
+1. **External PDFs Not Captured**: PDFs hosted on external domains (e.g., ParentSquare) are blocked by robots.txt and cannot be crawled.
 
-2. **External PDFs Not Captured**: PDFs hosted on external domains (e.g., ParentSquare) are blocked by robots.txt and cannot be crawled.
+2. **JavaScript-Rendered Content**: Pages that rely heavily on JavaScript may not be fully indexed if content loads after initial page render.
 
 ### Search Quality
-- Hybrid search (semantic + keyword) is used but some specific queries still don't retrieve the correct pages
-- Larger chunk sizes (500 tokens vs 300) and overlap (buffer 1) help but don't solve all cases
+- Hybrid search (semantic + keyword) provides good results for most queries
+- Selective reranking (disabled for main domain, enabled for school-specific queries) optimizes retrieval
+- Larger chunk sizes (300 tokens) with overlap (buffer 1) balance context and precision
 
-**Workaround for Critical Pages:**
-- Consider manually adding problematic pages as documents to the Knowledge Base
-- Or work with web team to ensure pages are properly structured for crawling
+**Content Management:**
+- IT team can trigger re-crawls through AWS Bedrock console
+- No custom scraper code to maintain
+- Automatic respect for robots.txt rules
 
 ## Operations Guide for IT Team
 
@@ -357,8 +386,8 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 **When website content changes, trigger a Knowledge Base sync:**
 
 1. Go to AWS Console → Bedrock → Knowledge Bases
-2. Select Knowledge Base: `OrcuttSchoolsKB-WebCrawler-v3` (ID: PHUCWA33C9)
-3. Click on the Data Source
+2. Select Knowledge Base: `OrcuttSchoolsKB` (ID: GCERPWLGOK)
+3. Click on the Data Source (Web Crawler)
 4. Click "Sync" button
 5. Monitor sync progress (typically 2-3 hours for full site)
 
@@ -367,10 +396,12 @@ This fork includes the following enhancements to improve chatbot accuracy and re
 - Routine updates: Weekly or bi-weekly
 - Before important events: Day before
 
+**Note:** The web crawler is a managed AWS service - no custom scraper code to maintain.
+
 ### Monitoring
 
 **Check chatbot health:**
-1. Visit: https://d3dolln1x7yei7.cloudfront.net
+1. Visit: https://orcutt-ai.techreformers.com (or https://d3dolln1x7yei7.cloudfront.net)
 2. Test with standard queries:
    - "Who is the Superintendent?"
    - "What are the school hours?"
@@ -433,7 +464,7 @@ export CDK_DEFAULT_REGION=us-west-2
 cdk deploy --profile orcutt-ai --require-approval never
 
 # 6. Test changes
-# Visit https://d3dolln1x7yei7.cloudfront.net
+# Visit https://orcutt-ai.techreformers.com
 
 # 7. Commit to git
 git add -A
@@ -458,10 +489,11 @@ git push
 ### AWS Resources
 
 **Key Resources:**
+- Custom Domain: https://orcutt-ai.techreformers.com
 - CloudFront Distribution: https://d3dolln1x7yei7.cloudfront.net
 - API Gateway: https://4rm7hu9b29.execute-api.us-west-2.amazonaws.com/prod/
 - Lambda Function: `OrcuttChatbotStack-dev-ChatbotLambda4595A29D-MISNPrFfoYqr`
-- Knowledge Base: `PHUCWA33C9` (OrcuttSchoolsKB-WebCrawler-v3)
+- Knowledge Base: `GCERPWLGOK` (OrcuttSchoolsKB with Web Crawler)
 - DynamoDB Table: `orcutt-conversations-785054116835`
 - S3 Bucket: `orcutt-chatbot-kb-dev-785054116835-us-west-2`
 
