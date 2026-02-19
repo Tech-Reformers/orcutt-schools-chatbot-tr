@@ -12,11 +12,8 @@ Original repository: [https://github.com/cal-poly-dxhub/orcutt-schools-chatbot](
 - [Architecture](#architecture)
 - [Support](#support)
 - [Deployment](#initial-setup)
-- [Knowledge Base Management](#knowledge-base-management)
+- [Webscraping](#webscraping)
 - [Troubleshooting](#troubleshooting)
-- [Improvements Made by Tech Reformers](#improvements-made-by-tech-reformers)
-- [Known Limitations](#known-limitations)
-- [Operations Guide for IT Team](#operations-guide-for-it-team)
 
 # About This Fork
 
