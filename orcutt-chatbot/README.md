@@ -569,3 +569,46 @@ For any queries or issues with this fork, please contact:
 For questions about the original project, please refer to the [original repository](https://github.com/cal-poly-dxhub/orcutt-schools-chatbot/tree/main) or contact:
 - Darren Kraker - <dkraker@amazon.com>
 - Shrey Shah - <sshah84@calpoly.edu>
+
+## Roadmap
+
+The following features are planned for future development:
+
+### 1. Dev/Prod Environment Separation
+**Status:** Spec Complete - Awaiting Approval
+
+**Goal:** Create separate development and production environments to safely test changes without impacting live users.
+
+**Key Features:**
+- Separate Lambda functions, DynamoDB tables, and CloudFront distributions for dev and prod
+- Shared Knowledge Base between environments to minimize costs
+- Environment-based resource naming with suffixes
+- Automated health checks and validation
+- Migration strategy to rename current "dev" resources to "prod"
+
+**Estimated Cost Impact:** ~$0-70/month increase (shared KB minimizes costs)
+
+**Spec Location:** `.kiro/specs/dev-prod-environments/`
+
+### 2. Streaming Responses
+**Status:** Spec Complete - Not Yet Scheduled
+
+**Goal:** Improve perceived response time by streaming chatbot responses word-by-word as they're generated, rather than waiting for the complete response.
+
+**Key Features:**
+- AWS Lambda response streaming with Bedrock Claude API
+- Frontend EventSource API for consuming streams
+- Graceful fallback to non-streaming for older browsers
+- Comprehensive error handling for connection failures and interruptions
+- Progress indicators during streaming
+
+**Expected Impact:** 
+- Reduced perceived latency (10-15 seconds feels faster when words appear incrementally)
+- Better user experience with real-time feedback
+- No change to actual response generation time
+
+**Spec Location:** `.kiro/specs/streaming-responses/`
+
+---
+
+**Note:** Implementation of roadmap items requires approval due to cost and complexity considerations. Specs are maintained in `.kiro/specs/` directory with detailed requirements, design, and implementation tasks.
