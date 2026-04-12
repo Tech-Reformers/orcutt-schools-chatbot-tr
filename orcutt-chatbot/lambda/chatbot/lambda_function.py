@@ -902,12 +902,11 @@ At the end of your response include a python list of the sources used, you will 
                     "messages": [{"role": "user", "content": prompt}],
                     "max_tokens": 2000,
                     "temperature": 0.3,
-                    "top_p": 0.9,
                     "anthropic_version": "bedrock-2023-05-31"
                 }
                 
                 response = self.bedrock_client.invoke_model(
-                    modelId="anthropic.claude-3-5-sonnet-20241022-v2:0",
+                    modelId="us.anthropic.claude-sonnet-4-5-20250929-v1:0",
                     body=json.dumps(body),
                     contentType='application/json'
                 )
